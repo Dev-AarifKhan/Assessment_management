@@ -1,0 +1,6 @@
+{
+  "name": "GHSS Larnoo",
+  "description": "Student Assessment and Result Management System for Government Higher Secondary School Larnoo with Admin & Teacher roles, marks awards, and printable marksheets.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
