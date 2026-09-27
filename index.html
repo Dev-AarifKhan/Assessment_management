@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GHSS Larnoo — Student Assessment & Award Roll Portal</title>
+    <meta name="description" content="Official Student Assessment, Examination and Result Management System of Government Higher Secondary School Larnoo (Anantnag, J&K)." />
+    <link rel="icon" type="image/jpeg" href="/school_crest.jpg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Cinzel:wght@600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+              serif: ['Cinzel', 'serif'],
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      :root {
+        --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+        --font-serif: 'Cinzel', serif;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: var(--font-sans);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        background-color: #f8fafc;
+        color: #0f172a;
+      }
+      @media print {
+        @page {
+          size: A4 portrait;
+          margin: 10mm;
+        }
+        body {
+          background-color: #ffffff !important;
+          color: #000000 !important;
+        }
+        .no-print {
+          display: none !important;
+        }
+        .print-only {
+          display: block !important;
+        }
+        .printable-page {
+          box-shadow: none !important;
+          border: 2px solid #000 !important;
+          margin: 0 !important;
+          width: 100% !important;
+          page-break-after: always;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
