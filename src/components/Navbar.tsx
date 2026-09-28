@@ -14,8 +14,7 @@ import {
   Moon, 
   Sun, 
   ShieldCheck, 
-  UserCheck, 
-  CloudCheck
+  UserCheck
 } from 'lucide-react';
 
 export const Navbar: React.FC<{ onOpenVercelModal: () => void }> = ({ onOpenVercelModal }) => {

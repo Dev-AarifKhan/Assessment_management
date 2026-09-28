@@ -10,6 +10,7 @@ interface AppContextType {
   bulkAddStudents: (newStudents: Student[]) => void;
   updateStudent: (student: Student) => void;
   deleteStudent: (studentId: string) => void;
+  bulkDeleteStudents: (studentIds: string[]) => void;
   assessments: Assessment[];
   addAssessment: (assessment: Assessment) => void;
   updateAssessment: (assessment: Assessment) => void;
@@ -121,6 +122,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteStudent = (studentId: string) => {
     setStudents(prev => prev.filter(s => s.studentId !== studentId));
+    setMarkEntries(prev => prev.filter(m => m.studentId !== studentId));
+  };
+
+  const bulkDeleteStudents = (studentIds: string[]) => {
+    const idSet = new Set(studentIds);
+    setStudents(prev => prev.filter(s => !idSet.has(s.studentId)));
+    setMarkEntries(prev => prev.filter(m => !idSet.has(m.studentId)));
   };
 
   const addAssessment = (assessment: Assessment) => {
@@ -179,6 +187,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         bulkAddStudents,
         updateStudent,
         deleteStudent,
+        bulkDeleteStudents,
         assessments,
         addAssessment,
         updateAssessment,
