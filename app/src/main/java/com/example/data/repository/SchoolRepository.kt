@@ -68,6 +68,10 @@ class SchoolRepository(
         studentDao.insertStudent(student)
     }
 
+    suspend fun bulkRegisterStudents(students: List<StudentEntity>) {
+        studentDao.insertStudents(students)
+    }
+
     suspend fun updateStudent(student: StudentEntity) {
         studentDao.updateStudent(student)
     }

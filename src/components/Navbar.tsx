@@ -47,7 +47,7 @@ export const Navbar: React.FC<{ onOpenVercelModal: () => void }> = ({ onOpenVerc
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-indigo-600 shadow-sm bg-white flex-shrink-0 flex items-center justify-center">
             <img 
-              src="/school_crest.jpg" 
+              src="/school_logo.png" 
               alt="GHSS Larnoo Crest" 
               className="w-full h-full object-cover"
               onError={(e) => {

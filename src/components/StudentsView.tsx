@@ -1,17 +1,20 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Student } from '../types';
-import { Search, UserPlus, FileText, CreditCard, Trash2, Edit2, ShieldAlert } from 'lucide-react';
+import { Search, UserPlus, FileText, CreditCard, Trash2, Edit2, ShieldAlert, FileSpreadsheet } from 'lucide-react';
 import { CLASSES_LIST } from '../data/initialData';
+import { BulkImportStudentsModal } from './BulkImportStudentsModal';
 
 export const StudentsView: React.FC = () => {
   const { students, addStudent, deleteStudent, role, setSelectedStudentId, setActiveTab } = useApp();
   const [selectedClass, setSelectedClass] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
+  const [showBulkModal, setShowBulkModal] = useState<boolean>(false);
 
   // Form state
   const [formData, setFormData] = useState({
+    studentId: '',
     name: '',
     parentage: '',
     className: '10th',
@@ -35,20 +38,30 @@ export const StudentsView: React.FC = () => {
 
   const handleAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const manualId = formData.studentId.trim();
+    if (!manualId) {
+      alert('Please provide a Student ID (e.g. STU1, STU2, STU101)');
+      return;
+    }
     if (!formData.name || !formData.rollNumber) {
       alert('Please fill Name and Roll Number');
       return;
     }
 
-    const newId = `GHSS-25-${formData.className.replace(/\D/g, '')}${formData.rollNumber.padStart(3, '0')}`;
+    if (students.some(s => s.studentId.toLowerCase() === manualId.toLowerCase())) {
+      alert(`Student ID "${manualId}" already exists! Please enter a unique Student ID.`);
+      return;
+    }
+
     const newStudent: Student = {
       ...formData,
-      studentId: newId,
+      studentId: manualId,
     };
 
     addStudent(newStudent);
     setShowAddModal(false);
     setFormData({
+      studentId: '',
       name: '',
       parentage: '',
       className: '10th',
@@ -75,13 +88,22 @@ export const StudentsView: React.FC = () => {
         </div>
 
         {role === 'admin' && (
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm shadow transition"
-          >
-            <UserPlus size={16} />
-            <span>Add Student</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowBulkModal(true)}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs sm:text-sm shadow-sm transition"
+            >
+              <FileSpreadsheet size={16} />
+              <span>Bulk Import (CSV / Excel)</span>
+            </button>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs sm:text-sm shadow transition"
+            >
+              <UserPlus size={16} />
+              <span>Add Student</span>
+            </button>
+          </div>
         )}
       </div>
 
@@ -237,6 +259,39 @@ export const StudentsView: React.FC = () => {
             </div>
 
             <form onSubmit={handleAddSubmit} className="p-5 space-y-4">
+              {/* Student ID Field (Manual STU1, STU2, etc.) */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    Student ID * <span className="text-slate-500 font-normal">(Manually provided, e.g. STU1, STU2...)</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const maxNum = students.reduce((acc, s) => {
+                        const m = s.studentId.match(/^STU(\d+)$/i);
+                        return m ? Math.max(acc, parseInt(m[1], 10)) : acc;
+                      }, 0);
+                      setFormData({ ...formData, studentId: `STU${maxNum + 1}` });
+                    }}
+                    className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline font-semibold"
+                  >
+                    + Suggest Next (STU{students.reduce((acc, s) => {
+                      const m = s.studentId.match(/^STU(\d+)$/i);
+                      return m ? Math.max(acc, parseInt(m[1], 10)) : acc;
+                    }, 0) + 1})
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  required
+                  value={formData.studentId}
+                  onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
+                  className="w-full px-3 py-2 text-xs sm:text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 font-mono font-bold"
+                  placeholder="e.g. STU1, STU2, STU101"
+                />
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
@@ -355,6 +410,12 @@ export const StudentsView: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Bulk Import CSV / Excel Modal */}
+      <BulkImportStudentsModal
+        isOpen={showBulkModal}
+        onClose={() => setShowBulkModal(false)}
+      />
     </div>
   );
 };

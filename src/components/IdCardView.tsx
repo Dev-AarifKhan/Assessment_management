@@ -55,7 +55,7 @@ export const IdCardView: React.FC = () => {
             <div className="bg-gradient-to-r from-indigo-900 to-slate-900 text-white p-3 text-center border-b-2 border-amber-400">
               <div className="flex items-center justify-center gap-2">
                 <div className="w-8 h-8 rounded-full overflow-hidden bg-white p-0.5">
-                  <img src="/school_crest.jpg" alt="" className="w-full h-full object-cover rounded-full" />
+                  <img src="/school_logo.png" alt="" className="w-full h-full object-cover rounded-full" />
                 </div>
                 <div>
                   <h4 className="font-extrabold text-xs uppercase tracking-tight leading-tight">

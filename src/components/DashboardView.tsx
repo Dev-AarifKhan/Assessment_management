@@ -71,7 +71,7 @@ export const DashboardView: React.FC = () => {
 
         {/* Decorative Watermark / Emblem in background */}
         <div className="absolute -right-8 -bottom-8 opacity-15 pointer-events-none w-64 h-64 sm:w-80 sm:h-80 rounded-full overflow-hidden">
-          <img src="/school_crest.jpg" alt="" className="w-full h-full object-cover filter contrast-125" />
+          <img src="/school_logo.png" alt="" className="w-full h-full object-cover filter contrast-125" />
         </div>
       </div>
 

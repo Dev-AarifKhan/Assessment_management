@@ -113,7 +113,7 @@ export const StudentMarksheetView: React.FC = () => {
           style={{ opacity: 0.08 }}
         >
           <img 
-            src="/school_crest.jpg" 
+            src="/school_logo.png" 
             alt="" 
             className="w-[500px] h-[500px] object-contain filter grayscale"
           />
@@ -126,7 +126,7 @@ export const StudentMarksheetView: React.FC = () => {
           <div className="border-b-2 border-slate-900 pb-4 text-center">
             <div className="flex items-center justify-between">
               <div className="w-20 h-20 rounded-full border-2 border-slate-900 p-1 bg-white flex-shrink-0">
-                <img src="/school_crest.jpg" alt="" className="w-full h-full object-cover rounded-full" />
+                <img src="/school_logo.png" alt="" className="w-full h-full object-cover rounded-full" />
               </div>
 
               <div className="flex-1 px-4">

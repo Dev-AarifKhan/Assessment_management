@@ -7,6 +7,7 @@ interface AppContextType {
   updateConfig: (newConfig: Partial<SchoolConfig>) => void;
   students: Student[];
   addStudent: (student: Student) => void;
+  bulkAddStudents: (newStudents: Student[]) => void;
   updateStudent: (student: Student) => void;
   deleteStudent: (studentId: string) => void;
   assessments: Assessment[];
@@ -102,6 +103,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setStudents(prev => [student, ...prev]);
   };
 
+  const bulkAddStudents = (newStudents: Student[]) => {
+    setStudents(prev => {
+      // Map existing by lowercase studentId
+      const map = new Map<string, Student>();
+      // Keep existing
+      prev.forEach(s => map.set(s.studentId.trim().toLowerCase(), s));
+      // Overwrite or append new students
+      newStudents.forEach(s => map.set(s.studentId.trim().toLowerCase(), s));
+      return Array.from(map.values());
+    });
+  };
+
   const updateStudent = (student: Student) => {
     setStudents(prev => prev.map(s => s.studentId === student.studentId ? student : s));
   };
@@ -163,6 +176,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateConfig,
         students,
         addStudent,
+        bulkAddStudents,
         updateStudent,
         deleteStudent,
         assessments,

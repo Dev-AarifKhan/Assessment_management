@@ -105,7 +105,7 @@ export const ClassAwardRollView: React.FC = () => {
           style={{ opacity: 0.08 }}
         >
           <img 
-            src="/school_crest.jpg" 
+            src="/school_logo.png" 
             alt="School Crest Watermark" 
             className="w-[500px] h-[500px] object-contain filter grayscale"
           />
@@ -119,7 +119,7 @@ export const ClassAwardRollView: React.FC = () => {
             <div className="flex items-center justify-between gap-4">
               <div className="w-20 h-20 rounded-full border-2 border-slate-900 p-1 bg-white flex-shrink-0">
                 <img 
-                  src="/school_crest.jpg" 
+                  src="/school_logo.png" 
                   alt="GHSS Larnoo Crest" 
                   className="w-full h-full object-cover rounded-full" 
                 />

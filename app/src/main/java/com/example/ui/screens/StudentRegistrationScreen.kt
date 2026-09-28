@@ -154,7 +154,7 @@ fun StudentRegistrationScreen(
                     Spacer(modifier = Modifier.width(10.dp))
                     Column {
                         Text(
-                            text = "Assigned Student ID",
+                            text = if (customId.isNotBlank()) "Student ID (Manual)" else "Student ID (Preview)",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                         )
@@ -168,12 +168,12 @@ fun StudentRegistrationScreen(
                 }
 
                 Surface(
-                    color = AmberGold.copy(alpha = 0.2f),
+                    color = if (customId.isNotBlank()) PassEmerald.copy(alpha = 0.2f) else AmberGold.copy(alpha = 0.2f),
                     shape = RoundedCornerShape(6.dp)
                 ) {
                     Text(
-                        text = "Auto-Indexed",
-                        color = AmberGold,
+                        text = if (customId.isNotBlank()) "Manual STU ID" else "Auto / Manual",
+                        color = if (customId.isNotBlank()) PassEmerald else AmberGold,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -193,6 +193,20 @@ fun StudentRegistrationScreen(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
+                // Manual Student ID Field (STU1, STU2, ...)
+                OutlinedTextField(
+                    value = customId,
+                    onValueChange = { customId = it },
+                    label = { Text("Student ID * (Manual: STU1, STU2, ...)") },
+                    placeholder = { Text("e.g. STU1, STU2, STU101") },
+                    leadingIcon = { Icon(Icons.Default.Badge, contentDescription = null) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("input_student_id"),
+                    singleLine = true,
+                    shape = RoundedCornerShape(10.dp)
+                )
+
                 // Name Field
                 OutlinedTextField(
                     value = name,
@@ -366,6 +380,7 @@ fun StudentRegistrationScreen(
                             parentage = ""
                             rollNumber = ""
                             phone = ""
+                            customId = ""
                         }
                     },
                     modifier = Modifier

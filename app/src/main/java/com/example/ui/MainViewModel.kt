@@ -255,6 +255,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun bulkRegisterStudents(students: List<StudentEntity>) {
+        if (students.isEmpty()) {
+            showFeedback("No student records provided for bulk import.")
+            return
+        }
+        viewModelScope.launch {
+            repository.bulkRegisterStudents(students)
+            showFeedback("Successfully bulk imported ${students.size} student records into database.")
+        }
+    }
+
     // ==========================================
     // Assessment Management
     // ==========================================
