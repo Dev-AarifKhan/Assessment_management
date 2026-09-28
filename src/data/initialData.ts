@@ -2,10 +2,10 @@ import { Student, Assessment, MarkEntry, SchoolConfig } from '../types';
 
 export const initialConfig: SchoolConfig = {
   schoolName: "Government Higher Secondary School Larnoo",
-  schoolCode: "01061601505",
+  schoolCode: "UDISE: 01061601505",
   schoolAddress: "Larnoo, Anantnag, Jammu & Kashmir - 192202",
-  affiliation: "Email: ghsslarnoo@gmail.com UDISE Code: 01061601505",
-  passingPercentage: 35.0,
+  affiliation: "Email: ghsslarnoo@gmail.com Website: https://hss-larnoo.onrender.com",
+  passingPercentage: 33.0,
   activeSession: "2025-2026",
 };
 
@@ -186,9 +186,13 @@ export const SUBJECTS_LIST = [
   "Biology",
   "Science",
   "Social Science",
+  "Education"
+  "Sociology"
   "Urdu",
   "Kashmiri",
   "Computer Science",
+  "IT/ITeS (Vocational)"
+  "Tourism & Hospitality (Vocational)"
   "Environmental Science",
   "Economics",
   "Political Science",
