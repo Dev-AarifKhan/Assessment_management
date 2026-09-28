@@ -1,0 +1,118 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile with role-based access information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 100 },
+        "email": { "type": "string", "maxLength": 100 },
+        "role": { "type": "string", "enum": ["admin", "teacher"] },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "maxLength": 50 },
+        "updatedAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["uid", "name", "email", "role", "active"]
+    },
+    "Student": {
+      "title": "Student",
+      "description": "Student candidate enrollment record",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 100 },
+        "parentage": { "type": "string", "maxLength": 100 },
+        "className": { "type": "string", "maxLength": 20 },
+        "rollNumber": { "type": "string", "maxLength": 20 },
+        "academicSession": { "type": "string", "maxLength": 20 },
+        "stream": { "type": "string", "maxLength": 50 },
+        "phone": { "type": "string", "maxLength": 20 },
+        "gender": { "type": "string", "enum": ["Male", "Female", "Other"] },
+        "admissionDate": { "type": "string", "maxLength": 30 },
+        "createdAt": { "type": "string", "maxLength": 50 },
+        "createdBy": { "type": "string", "maxLength": 128 },
+        "updatedAt": { "type": "string", "maxLength": 50 },
+        "updatedBy": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["studentId", "name", "parentage", "className", "rollNumber", "academicSession", "stream", "phone", "gender", "admissionDate"]
+    },
+    "Assessment": {
+      "title": "Assessment",
+      "description": "Examination or test configuration",
+      "type": "object",
+      "properties": {
+        "assessmentId": { "type": "string", "maxLength": 128 },
+        "academicSession": { "type": "string", "maxLength": 20 },
+        "className": { "type": "string", "maxLength": 20 },
+        "subject": { "type": "string", "maxLength": 100 },
+        "type": { "type": "string", "maxLength": 50 },
+        "name": { "type": "string", "maxLength": 150 },
+        "maxMarks": { "type": "number" },
+        "date": { "type": "string", "maxLength": 30 },
+        "createdAt": { "type": "string", "maxLength": 50 },
+        "createdBy": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["assessmentId", "academicSession", "className", "subject", "type", "name", "maxMarks", "date"]
+    },
+    "MarkEntry": {
+      "title": "MarkEntry",
+      "description": "Student score record for a specific assessment",
+      "type": "object",
+      "properties": {
+        "markEntryId": { "type": "string", "maxLength": 128 },
+        "assessmentId": { "type": "string", "maxLength": 128 },
+        "studentId": { "type": "string", "maxLength": 128 },
+        "className": { "type": "string", "maxLength": 20 },
+        "academicSession": { "type": "string", "maxLength": 20 },
+        "obtainedMarks": { "type": "number" },
+        "maxMarks": { "type": "number" },
+        "status": { "type": "string", "enum": ["Present", "Absent", "Medical"] },
+        "result": { "type": "string", "enum": ["Pass", "Fail", "Pending"] },
+        "percentage": { "type": "number" },
+        "remarks": { "type": "string", "maxLength": 200 },
+        "updatedAt": { "type": "string", "maxLength": 50 },
+        "updatedBy": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["markEntryId", "assessmentId", "studentId", "className", "academicSession", "maxMarks", "status", "result"]
+    },
+    "SchoolConfig": {
+      "title": "SchoolConfig",
+      "description": "Global school credentials and grading rules",
+      "type": "object",
+      "properties": {
+        "schoolName": { "type": "string", "maxLength": 150 },
+        "schoolCode": { "type": "string", "maxLength": 50 },
+        "schoolAddress": { "type": "string", "maxLength": 200 },
+        "affiliation": { "type": "string", "maxLength": 200 },
+        "passingPercentage": { "type": "number" },
+        "activeSession": { "type": "string", "maxLength": 20 },
+        "updatedAt": { "type": "string", "maxLength": 50 },
+        "updatedBy": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["schoolName", "schoolCode", "schoolAddress", "affiliation", "passingPercentage", "activeSession"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profiles and RBAC role assignments"
+    },
+    "/students/{studentId}": {
+      "schema": "Student",
+      "description": "Student candidate database"
+    },
+    "/assessments/{assessmentId}": {
+      "schema": "Assessment",
+      "description": "Examination and test setups"
+    },
+    "/marks/{markEntryId}": {
+      "schema": "MarkEntry",
+      "description": "Marks records for students across assessments"
+    },
+    "/config/{configId}": {
+      "schema": "SchoolConfig",
+      "description": "School level configurations"
+    }
+  }
+}

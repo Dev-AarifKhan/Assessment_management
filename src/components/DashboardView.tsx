@@ -27,7 +27,7 @@ export const DashboardView: React.FC = () => {
   const passedMarks = currentSessionMarks.filter(m => m.result === 'Pass');
   const overallPassRate = currentSessionMarks.length > 0 
     ? Math.round((passedMarks.length / currentSessionMarks.length) * 100)
-    : 85;
+    : 0;
 
   const classCounts = {
     '9th': students.filter(s => normalizeClassName(s.className) === '9th').length,
@@ -110,9 +110,11 @@ export const DashboardView: React.FC = () => {
         <div className="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex items-center justify-between">
           <div>
             <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Pass Percentage</p>
-            <h3 className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{overallPassRate}%</h3>
-            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1 inline-block">
-              Min Threshold: {config.passingPercentage}%
+            <h3 className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
+              {currentSessionMarks.length > 0 ? `${overallPassRate}%` : '0%'}
+            </h3>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 inline-block">
+              {currentSessionMarks.length > 0 ? `Min Threshold: ${config.passingPercentage}%` : 'No marks entered yet'}
             </span>
           </div>
           <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">

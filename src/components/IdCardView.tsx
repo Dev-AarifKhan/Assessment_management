@@ -56,8 +56,21 @@ export const IdCardView: React.FC = () => {
       </div>
 
       {/* ID Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {classStudents.map(st => (
+      {classStudents.length === 0 ? (
+        <div className="p-12 text-center rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm max-w-xl mx-auto my-8">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+            <CreditCard size={32} />
+          </div>
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+            No Students Found in Class {selectedClass}
+          </h3>
+          <p className="mt-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+            All test data has been cleared. Enroll students or import your class roster in the Students tab to generate identity cards.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {classStudents.map(st => (
           <div
             key={st.studentId}
             className="rounded-2xl border-2 border-indigo-950 bg-white text-slate-900 shadow-lg overflow-hidden flex flex-col justify-between"
@@ -132,6 +145,7 @@ export const IdCardView: React.FC = () => {
           </div>
         ))}
       </div>
+      )}
     </div>
   );
 };

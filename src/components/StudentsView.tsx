@@ -344,7 +344,16 @@ export const StudentsView: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-800 dark:text-slate-200">
-              {filteredStudents.length === 0 ? (
+              {students.length === 0 ? (
+                <tr>
+                  <td colSpan={role === 'admin' ? 8 : 7} className="py-12 text-center text-slate-500">
+                    <div className="max-w-md mx-auto space-y-2">
+                      <p className="font-bold text-slate-700 dark:text-slate-300">No students enrolled yet</p>
+                      <p className="text-xs text-slate-400">All test data has been cleared. Use &quot;Bulk Import&quot; to upload your student roster from Excel/CSV or click &quot;Enroll Student&quot; to add candidates manually.</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : filteredStudents.length === 0 ? (
                 <tr>
                   <td colSpan={role === 'admin' ? 8 : 7} className="py-8 text-center text-slate-400">
                     No students found matching your criteria.

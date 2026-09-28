@@ -1,5 +1,6 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 import { ActiveTab } from '../types';
 import { 
   GraduationCap, 
@@ -14,22 +15,29 @@ import {
   Moon, 
   Sun, 
   ShieldCheck, 
-  UserCheck
+  UserCheck,
+  UserCog,
+  LogOut
 } from 'lucide-react';
 
 export const Navbar: React.FC<{ onOpenVercelModal: () => void }> = ({ onOpenVercelModal }) => {
-  const { config, role, setRole, theme, setTheme, activeTab, setActiveTab } = useApp();
+  const { config, theme, setTheme, activeTab, setActiveTab } = useApp();
+  const { userProfile, isAdmin, logout } = useAuth();
 
-  const navItems: { id: ActiveTab; label: string; icon: React.ReactNode }[] = [
+  const allNavItems: { id: ActiveTab; label: string; icon: React.ReactNode; adminOnly?: boolean }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
     { id: 'students', label: 'Students', icon: <Users size={18} /> },
     { id: 'assessments', label: 'Assessments', icon: <BookOpen size={18} /> },
     { id: 'marks', label: 'Marks Entry', icon: <FileEdit size={18} /> },
     { id: 'class-award', label: 'Award Roll (PDF)', icon: <Award size={18} /> },
     { id: 'marksheet', label: 'Marksheet (PDF)', icon: <FileText size={18} /> },
-    { id: 'id-cards', label: 'ID Cards', icon: <CreditCard size={18} /> },
-    { id: 'settings', label: 'Settings', icon: <Settings size={18} /> },
+    { id: 'id-cards', label: 'ID Cards', icon: <CreditCard size={18} />, adminOnly: true },
+    { id: 'users', label: 'User Management', icon: <UserCog size={18} />, adminOnly: true },
+    { id: 'settings', label: 'Settings', icon: <Settings size={18} />, adminOnly: true },
   ];
+
+  // Filter navigation items strictly based on role
+  const navItems = allNavItems.filter(item => !item.adminOnly || isAdmin);
 
   const isDark = theme === 'dark';
 
@@ -50,7 +58,6 @@ export const Navbar: React.FC<{ onOpenVercelModal: () => void }> = ({ onOpenVerc
               alt="GHSS Larnoo Crest" 
               className="w-full h-full object-cover"
               onError={(e) => {
-                // Fallback to icon if image fails
                 (e.target as HTMLElement).style.display = 'none';
               }}
             />
@@ -70,57 +77,63 @@ export const Navbar: React.FC<{ onOpenVercelModal: () => void }> = ({ onOpenVerc
           </div>
         </div>
 
-        {/* Right side controls: Role switch, Vercel Ready pill, Theme toggle */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        {/* Right side controls: Logged-in User Display, Vercel Ready, Theme, Logout */}
+        <div className="flex items-center gap-3 sm:gap-4">
+          
           {/* Vercel Deployment pill */}
           <button
             onClick={onOpenVercelModal}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800 transition"
+            className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800 transition"
             title="Vercel Deployment Ready"
           >
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
-            <span className="hidden sm:inline">Vercel Ready</span>
-            <span className="sm:hidden">Ready</span>
+            <span>Vercel Ready</span>
           </button>
 
-          {/* Role Toggle */}
-          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-medium">
-            <button
-              onClick={() => setRole('admin')}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition ${
-                role === 'admin'
-                  ? 'bg-indigo-600 text-white shadow-sm font-semibold'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
-              }`}
-            >
-              <ShieldCheck size={14} />
-              <span>Admin</span>
-            </button>
-            <button
-              onClick={() => setRole('teacher')}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition ${
-                role === 'teacher'
-                  ? 'bg-indigo-600 text-white shadow-sm font-semibold'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
-              }`}
-            >
-              <UserCheck size={14} />
-              <span>Teacher</span>
-            </button>
+          {/* Logged-In User Profile & Role Display */}
+          <div className="flex items-center gap-2.5 pl-2 sm:pl-3 border-l border-slate-200 dark:border-slate-800">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-700 to-indigo-500 text-white font-black text-xs flex items-center justify-center shadow-sm">
+              {userProfile?.name ? userProfile.name.charAt(0).toUpperCase() : 'U'}
+            </div>
+            <div className="text-right leading-tight">
+              <p className="text-xs font-bold text-slate-900 dark:text-white truncate max-w-[130px] sm:max-w-[180px]">
+                {userProfile?.name || 'Staff Member'}
+              </p>
+              <div className="flex items-center justify-end gap-1 mt-0.5">
+                <span className={`inline-block text-[9px] font-black uppercase tracking-wider px-2 py-0.2 rounded-full border ${
+                  isAdmin
+                    ? 'bg-amber-100 text-amber-900 dark:bg-amber-950/90 dark:text-amber-300 border-amber-300 dark:border-amber-800'
+                    : 'bg-indigo-100 text-indigo-900 dark:bg-indigo-950/90 dark:text-indigo-300 border-indigo-300 dark:border-indigo-800'
+                }`}>
+                  {userProfile?.role === 'admin' ? 'ADMIN' : 'TEACHER'}
+                </span>
+              </div>
+            </div>
           </div>
 
           {/* Theme Toggle */}
           <button
             onClick={() => setTheme(isDark ? 'light' : 'dark')}
-            className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
-            aria-label="Toggle High-Contrast Theme"
-            title={isDark ? "Switch to High-Contrast Light Mode" : "Switch to High-Contrast Dark Mode"}
+            className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+            aria-label="Toggle Theme"
+            title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
           >
-            {isDark ? <Sun size={18} className="text-amber-400" /> : <Moon size={18} className="text-indigo-600" />}
+            {isDark ? <Sun size={17} className="text-amber-400" /> : <Moon size={17} className="text-indigo-600" />}
           </button>
+
+          {/* Logout Button */}
+          <button
+            onClick={logout}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/50 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 text-xs font-bold shadow-sm transition active:scale-95"
+            title="Sign out of portal"
+          >
+            <LogOut size={15} />
+            <span className="hidden sm:inline">Logout</span>
+          </button>
+
         </div>
       </div>
 
@@ -141,6 +154,11 @@ export const Navbar: React.FC<{ onOpenVercelModal: () => void }> = ({ onOpenVerc
               >
                 {item.icon}
                 <span>{item.label}</span>
+                {item.adminOnly && (
+                  <span className="text-[9px] px-1 py-0.2 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold uppercase ml-0.5">
+                    Admin
+                  </span>
+                )}
               </button>
             );
           })}

@@ -46,5 +46,15 @@ export interface SchoolConfig {
   activeSession: string;
 }
 
+export interface UserProfile {
+  uid: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type UserRole = 'admin' | 'teacher';
-export type ActiveTab = 'dashboard' | 'students' | 'assessments' | 'marks' | 'class-award' | 'marksheet' | 'id-cards' | 'settings';
+export type ActiveTab = 'dashboard' | 'students' | 'assessments' | 'marks' | 'class-award' | 'marksheet' | 'id-cards' | 'users' | 'settings';

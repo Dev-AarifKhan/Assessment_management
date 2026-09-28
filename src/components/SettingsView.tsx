@@ -169,10 +169,11 @@ export const SettingsView: React.FC<{ onOpenVercelModal: () => void }> = ({ onOp
           </p>
         </div>
         <button
-          onClick={() => {
+          onClick={async () => {
             if (confirm('Are you sure you want to reset all data to default samples?')) {
-              resetToDefaults();
-              alert('Data successfully reset!');
+              await resetToDefaults();
+              setSavedToast(true);
+              setTimeout(() => setSavedToast(false), 3000);
             }
           }}
           className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs shadow transition"

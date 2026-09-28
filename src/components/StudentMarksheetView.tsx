@@ -1,9 +1,13 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { FileText, Printer, ArrowLeft } from 'lucide-react';
+import { FileText, Printer, ArrowLeft, GraduationCap, Users, Download, Loader2 } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 export const StudentMarksheetView: React.FC = () => {
-  const { students, assessments, markEntries, config, selectedStudentId, setSelectedStudentId } = useApp();
+  const { students, assessments, markEntries, config, selectedStudentId, setSelectedStudentId, setActiveTab } = useApp();
+  const marksheetRef = useRef<HTMLDivElement>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const activeStudent = students.find(s => s.studentId === selectedStudentId) || students[0];
 
@@ -15,10 +19,82 @@ export const StudentMarksheetView: React.FC = () => {
     window.print();
   };
 
-  if (!activeStudent) {
+  const handleDownloadPDF = async () => {
+    if (!marksheetRef.current || !activeStudent) return;
+    setIsDownloading(true);
+    try {
+      const element = marksheetRef.current;
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        windowWidth: 1024,
+      });
+
+      const imgData = canvas.toDataURL('image/png', 1.0);
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = pdfWidth;
+      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      if (imgHeight <= pdfHeight) {
+        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight, undefined, 'FAST');
+      } else {
+        let heightLeft = imgHeight;
+        let position = 0;
+
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
+        heightLeft -= pdfHeight;
+
+        while (heightLeft > 0) {
+          position -= pdfHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
+          heightLeft -= pdfHeight;
+        }
+      }
+
+      const safeName = (activeStudent.name || 'Student').trim().replace(/[^a-zA-Z0-9_-]/g, '_');
+      const safeRoll = (activeStudent.rollNumber || '0').trim();
+      const safeClass = (activeStudent.className || '').trim().replace(/[^a-zA-Z0-9]/g, '');
+      const filename = `Marksheet_Class_${safeClass}_Roll_${safeRoll}_${safeName}.pdf`;
+
+      pdf.save(filename);
+    } catch (err) {
+      console.error('Error generating marksheet PDF:', err);
+      // Fallback to browser print if canvas generation encounters an error
+      window.print();
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  if (!activeStudent || students.length === 0) {
     return (
-      <div className="p-8 text-center text-slate-500">
-        No student selected.
+      <div className="p-12 text-center rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm max-w-xl mx-auto my-8">
+        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+          <GraduationCap size={32} />
+        </div>
+        <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+          No Students Enrolled
+        </h3>
+        <p className="mt-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+          Test data has been cleared. Add students or bulk import your class roster in the Students tab to generate official marksheets.
+        </p>
+        <button
+          onClick={() => setActiveTab('students')}
+          className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs sm:text-sm shadow-md transition"
+        >
+          <Users size={16} />
+          <span>Go to Students Tab</span>
+        </button>
       </div>
     );
   }
@@ -93,17 +169,39 @@ export const StudentMarksheetView: React.FC = () => {
           </select>
 
           <button
+            onClick={handleDownloadPDF}
+            disabled={isDownloading}
+            className="flex items-center gap-2 px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white font-bold text-sm shadow transition active:scale-95"
+            title="Download direct PDF file to your device"
+          >
+            {isDownloading ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                <span>Exporting PDF...</span>
+              </>
+            ) : (
+              <>
+                <Download size={16} />
+                <span>Download as PDF</span>
+              </>
+            )}
+          </button>
+
+          <button
             onClick={handlePrint}
-            className="flex items-center gap-2 px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow transition active:scale-95"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold text-sm shadow-sm transition active:scale-95"
+            title="Open system print dialog"
           >
             <Printer size={16} />
-            <span>Print Marksheet (PDF)</span>
+            <span>Print</span>
           </button>
         </div>
       </div>
 
       {/* Printable Sheet */}
       <div 
+        ref={marksheetRef}
+        id="student-marksheet-printable"
         className="printable-page relative bg-white text-slate-900 p-8 sm:p-12 rounded-2xl border-4 border-double border-slate-800 shadow-2xl mx-auto max-w-4xl overflow-hidden"
         style={{ minHeight: '960px', backgroundColor: '#ffffff', color: '#0f172a' }}
       >

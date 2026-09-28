@@ -1,0 +1,88 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isActiveUser() {
+      return isSignedIn() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+        getUserData().active == true;
+    }
+
+    function isAdmin() {
+      return isActiveUser() && getUserData().role == 'admin';
+    }
+
+    function isTeacher() {
+      return isActiveUser() && (getUserData().role == 'teacher' || getUserData().role == 'admin');
+    }
+
+    // 1. Users collection
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && (request.auth.uid == userId || isAdmin());
+      allow list: if isAdmin();
+      
+      // Allow initial admin setup if no profile exists for this uid, or admin creating users
+      allow create: if isSignedIn() && isValidId(userId) && (
+        isAdmin() || 
+        (!exists(/databases/$(database)/documents/users/$(userId)) && request.auth.uid == userId)
+      );
+
+      // Only Admins can modify users. Prevent self-role modification.
+      allow update: if isSignedIn() && isValidId(userId) && isAdmin() && (
+        request.auth.uid != userId || request.resource.data.role == resource.data.role
+      );
+
+      // Only Admins can delete users, but cannot delete self
+      allow delete: if isSignedIn() && isValidId(userId) && isAdmin() && request.auth.uid != userId;
+    }
+
+    // 2. Students collection
+    match /students/{studentId} {
+      allow read: if isTeacher();
+      allow create, update: if isAdmin() && isValidId(studentId);
+      // Teachers CANNOT delete students (single or bulk); only Admin can delete
+      allow delete: if isAdmin() && isValidId(studentId);
+    }
+
+    // 3. Assessments collection
+    match /assessments/{assessmentId} {
+      allow read: if isTeacher();
+      allow create, update: if isTeacher() && isValidId(assessmentId);
+      // Teachers CANNOT delete assessments; only Admin can delete
+      allow delete: if isAdmin() && isValidId(assessmentId);
+    }
+
+    // 4. Marks collection
+    match /marks/{markEntryId} {
+      allow read: if isTeacher();
+      allow create, update: if isTeacher() && isValidId(markEntryId);
+      // Teachers CANNOT wipe out marks history; only Admin can delete
+      allow delete: if isAdmin() && isValidId(markEntryId);
+    }
+
+    // 5. School Configuration collection
+    match /config/{configId} {
+      allow read: if isTeacher();
+      // Only Admin can configure school information, passing threshold, etc.
+      allow write: if isAdmin() && isValidId(configId);
+    }
+  }
+}

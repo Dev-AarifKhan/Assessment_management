@@ -137,17 +137,19 @@ export const AssessmentsView: React.FC = () => {
                       <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
                         {a.type}
                       </span>
-                      <button
-                        onClick={() => {
-                          if (confirm(`Delete assessment "${a.name}" (${a.className} • ${a.subject})? All marks entered for this assessment will also be removed.`)) {
-                            deleteAssessment(a.assessmentId);
-                          }
-                        }}
-                        className="p-1 rounded text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition"
-                        title="Delete assessment"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                      {role === 'admin' && (
+                        <button
+                          onClick={() => {
+                            if (confirm(`Delete assessment "${a.name}" (${a.className} • ${a.subject})? All marks entered for this assessment will also be removed.`)) {
+                              deleteAssessment(a.assessmentId);
+                            }
+                          }}
+                          className="p-1 rounded text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition"
+                          title="Delete assessment (Admin Only)"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
                     </div>
                   </div>
 
