@@ -282,9 +282,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateStudent = async (student: Student) => {
-    if (!isAdmin) {
-      throw new Error("Unauthorized: Only an Administrator can modify student profiles.");
-    }
     const normalized = { ...student, className: normalizeClassName(student.className) };
     setStudents(prev => prev.map(s => s.studentId === normalized.studentId ? normalized : s));
     await setDoc(doc(db, 'students', normalized.studentId), {
@@ -292,6 +289,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updatedAt: new Date().toISOString(),
       updatedBy: userProfile?.uid || ''
     }, { merge: true });
+
+    // Also keep studentName and rollNumber synced in any existing markEntries for this student
+    const studentMarks = markEntries.filter(m => m.studentId === normalized.studentId);
+    if (studentMarks.length > 0) {
+      setMarkEntries(prev =>
+        prev.map(m =>
+          m.studentId === normalized.studentId
+            ? { ...m, studentName: normalized.name, rollNumber: normalized.rollNumber }
+            : m
+        )
+      );
+      const batch = writeBatch(db);
+      studentMarks.forEach(m => {
+        batch.set(
+          doc(db, 'marks', m.markEntryId),
+          {
+            studentName: normalized.name,
+            rollNumber: normalized.rollNumber,
+            updatedAt: new Date().toISOString(),
+            updatedBy: userProfile?.uid || ''
+          },
+          { merge: true }
+        );
+      });
+      await batch.commit();
+    }
   };
 
   const deleteStudent = async (studentId: string) => {

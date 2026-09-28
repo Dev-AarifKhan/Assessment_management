@@ -19,10 +19,11 @@ import { CLASSES_LIST } from '../data/initialData';
 import { BulkImportStudentsModal } from './BulkImportStudentsModal';
 
 export const StudentsView: React.FC = () => {
-  const { students, addStudent, deleteStudent, bulkDeleteStudents, role, setSelectedStudentId, setActiveTab } = useApp();
+  const { students, addStudent, updateStudent, deleteStudent, bulkDeleteStudents, role, setSelectedStudentId, setActiveTab } = useApp();
   const [selectedClass, setSelectedClass] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
+  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [showBulkModal, setShowBulkModal] = useState<boolean>(false);
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState<boolean>(false);
   const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(new Set());
@@ -100,6 +101,30 @@ export const StudentsView: React.FC = () => {
       academicSession: '2025-2026',
       admissionDate: new Date().toISOString().split('T')[0]
     });
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingStudent) return;
+    if (!editingStudent.name.trim() || !editingStudent.rollNumber.trim()) {
+      alert('Please fill Name and Roll Number');
+      return;
+    }
+
+    await updateStudent({
+      ...editingStudent,
+      name: editingStudent.name.trim(),
+      parentage: editingStudent.parentage.trim(),
+      rollNumber: editingStudent.rollNumber.trim(),
+      stream: editingStudent.stream.trim() || 'General',
+      phone: editingStudent.phone.trim(),
+    });
+    const updatedName = editingStudent.name.trim();
+    setEditingStudent(null);
+    setFeedbackToast(`Successfully updated information for ${updatedName}.`);
+    setTimeout(() => {
+      setFeedbackToast(null);
+    }, 4000);
   };
 
   // Bulk selection calculations
@@ -407,6 +432,13 @@ export const StudentsView: React.FC = () => {
                       <td className="py-3 px-4 text-right">
                         <div className="inline-flex items-center gap-1.5">
                           <button
+                            onClick={() => setEditingStudent({ ...s })}
+                            className="p-1.5 rounded-lg text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950 transition"
+                            title="Edit Student Information"
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                          <button
                             onClick={() => {
                               setSelectedStudentId(s.studentId);
                               setActiveTab('marksheet');
@@ -454,6 +486,145 @@ export const StudentsView: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* Edit Student Modal */}
+      {editingStudent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">Edit Student Information</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Student ID: <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">{editingStudent.studentId}</span>
+                </p>
+              </div>
+              <button
+                onClick={() => setEditingStudent(null)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xl font-bold"
+              >
+                &times;
+              </button>
+            </div>
+
+            <form onSubmit={handleEditSubmit} className="p-5 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Student Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editingStudent.name}
+                    onChange={(e) => setEditingStudent({ ...editingStudent, name: e.target.value })}
+                    className="w-full px-3 py-2 text-xs sm:text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                    placeholder="Enter student full name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Father&apos;s Name (Parentage) *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editingStudent.parentage}
+                    onChange={(e) => setEditingStudent({ ...editingStudent, parentage: e.target.value })}
+                    className="w-full px-3 py-2 text-xs sm:text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                    placeholder="Enter father's / guardian's name"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Class *
+                  </label>
+                  <select
+                    value={editingStudent.className}
+                    onChange={(e) => setEditingStudent({ ...editingStudent, className: e.target.value })}
+                    className="w-full px-3 py-2 text-xs sm:text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                  >
+                    {allClasses.map((c) => (
+                      <option key={c} value={c}>Class {c}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Roll Number *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editingStudent.rollNumber}
+                    onChange={(e) => setEditingStudent({ ...editingStudent, rollNumber: e.target.value })}
+                    className="w-full px-3 py-2 text-xs sm:text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                    placeholder="Enter roll number"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Gender
+                  </label>
+                  <select
+                    value={editingStudent.gender}
+                    onChange={(e) => setEditingStudent({ ...editingStudent, gender: e.target.value })}
+                    className="w-full px-3 py-2 text-xs sm:text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Stream
+                  </label>
+                  <input
+                    type="text"
+                    value={editingStudent.stream}
+                    onChange={(e) => setEditingStudent({ ...editingStudent, stream: e.target.value })}
+                    className="w-full px-3 py-2 text-xs sm:text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                    placeholder="General / Medical / Non-Med"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Phone Contact
+                  </label>
+                  <input
+                    type="text"
+                    value={editingStudent.phone}
+                    onChange={(e) => setEditingStudent({ ...editingStudent, phone: e.target.value })}
+                    className="w-full px-3 py-2 text-xs sm:text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                    placeholder="Enter contact phone number"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEditingStudent(null)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow"
+                >
+                  Update Student
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Add Student Modal */}
       {showAddModal && (
