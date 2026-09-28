@@ -14,6 +14,9 @@ interface StudentDao {
     @Query("SELECT * FROM students ORDER BY className ASC, CAST(rollNumber AS INTEGER) ASC")
     fun getAllStudents(): Flow<List<StudentEntity>>
 
+    @Query("SELECT * FROM students ORDER BY className ASC, CAST(rollNumber AS INTEGER) ASC")
+    suspend fun getAllStudentsDirect(): List<StudentEntity>
+
     @Query("SELECT * FROM students WHERE className = :className AND academicSession = :session ORDER BY CAST(rollNumber AS INTEGER) ASC, name ASC")
     fun getStudentsByClassAndSession(className: String, session: String): Flow<List<StudentEntity>>
 
@@ -50,4 +53,7 @@ interface StudentDao {
 
     @Delete
     suspend fun deleteStudent(student: StudentEntity)
+
+    @Query("DELETE FROM students WHERE studentId = :studentId")
+    suspend fun deleteStudentById(studentId: String)
 }

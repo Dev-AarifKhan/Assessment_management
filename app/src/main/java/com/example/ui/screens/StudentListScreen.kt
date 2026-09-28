@@ -24,9 +24,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Grade
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
@@ -39,9 +42,13 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -69,6 +76,8 @@ fun StudentListScreen(
     val searchQuery by viewModel.studentSearchQuery.collectAsState()
     val selectedClass by viewModel.selectedClass.collectAsState()
     val selectedSession by viewModel.selectedSession.collectAsState()
+
+    var editingStudent by remember { mutableStateOf<StudentEntity?>(null) }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -222,6 +231,9 @@ fun StudentListScreen(
                                 viewModel.selectStudent(student)
                                 viewModel.navigateTo(NavigationDestination.IdCardGenerator)
                             },
+                            onEdit = {
+                                editingStudent = student
+                            },
                             onDelete = {
                                 viewModel.deleteStudent(student)
                             }
@@ -231,6 +243,53 @@ fun StudentListScreen(
             }
         }
     }
+
+    editingStudent?.let { st ->
+        var editName by remember(st) { mutableStateOf(st.name) }
+        var editParentage by remember(st) { mutableStateOf(st.parentage) }
+        var editClass by remember(st) { mutableStateOf(st.className) }
+        var editRoll by remember(st) { mutableStateOf(st.rollNumber) }
+        var editStream by remember(st) { mutableStateOf(st.stream) }
+        var editPhone by remember(st) { mutableStateOf(st.phone) }
+
+        AlertDialog(
+            onDismissRequest = { editingStudent = null },
+            title = { Text("Edit Student (${st.studentId})", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(value = editName, onValueChange = { editName = it }, label = { Text("Full Name") }, singleLine = true)
+                    OutlinedTextField(value = editParentage, onValueChange = { editParentage = it }, label = { Text("Parentage") }, singleLine = true)
+                    OutlinedTextField(value = editClass, onValueChange = { editClass = it }, label = { Text("Class (9th-12th)") }, singleLine = true)
+                    OutlinedTextField(value = editRoll, onValueChange = { editRoll = it }, label = { Text("Roll Number") }, singleLine = true)
+                    OutlinedTextField(value = editStream, onValueChange = { editStream = it }, label = { Text("Stream") }, singleLine = true)
+                    OutlinedTextField(value = editPhone, onValueChange = { editPhone = it }, label = { Text("Phone") }, singleLine = true)
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    viewModel.updateStudent(
+                        studentId = st.studentId,
+                        name = editName,
+                        parentage = editParentage,
+                        className = editClass,
+                        rollNumber = editRoll,
+                        academicSession = st.academicSession,
+                        stream = editStream,
+                        phone = editPhone,
+                        gender = st.gender
+                    )
+                    editingStudent = null
+                }) {
+                    Text("Save Changes")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { editingStudent = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 }
 
 @Composable
@@ -239,6 +298,7 @@ fun StudentItemCard(
     isAdmin: Boolean,
     onViewResult: () -> Unit,
     onViewIdCard: () -> Unit,
+    onEdit: () -> Unit = {},
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -358,6 +418,18 @@ fun StudentItemCard(
                         }
 
                         if (isAdmin) {
+                            IconButton(
+                                onClick = onEdit,
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Edit,
+                                    contentDescription = "Edit",
+                                    tint = AmberGold,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+
                             IconButton(
                                 onClick = onDelete,
                                 modifier = Modifier.size(32.dp)

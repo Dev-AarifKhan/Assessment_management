@@ -360,6 +360,21 @@ fun StudentRegistrationScreen(
                     shape = RoundedCornerShape(10.dp)
                 )
 
+                var selectedGender by remember { mutableStateOf("Male") }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf("Male", "Female", "Other").forEach { g ->
+                        FilterChip(
+                            selected = selectedGender == g,
+                            onClick = { selectedGender = g },
+                            label = { Text(g) },
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(4.dp))
 
                 // Submit Registration Button
@@ -373,6 +388,7 @@ fun StudentRegistrationScreen(
                             academicSession = session,
                             stream = selectedStream,
                             phone = phone,
+                            gender = selectedGender,
                             customId = customId.ifBlank { null }
                         )
                         if (success) {
@@ -397,6 +413,60 @@ fun StudentRegistrationScreen(
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold
                     )
+                }
+            }
+        }
+
+        // Bulk CSV Import Card (Connected to Room + Firestore)
+        var csvText by remember { mutableStateOf("") }
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text(
+                    text = "Bulk Import Students (CSV)",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = NavyPrimary
+                )
+                Text(
+                    text = "Format per line: StudentID, Name, Parentage, Class, RollNo, Session, Stream, Phone, Gender",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                OutlinedTextField(
+                    value = csvText,
+                    onValueChange = { csvText = it },
+                    label = { Text("Paste CSV rows here") },
+                    placeholder = { Text("STU101, Aarif Ahmad, Ghulam Nabi, 10th, 1, 2025-2026, General, 9419000001, Male") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(110.dp)
+                        .testTag("input_bulk_csv"),
+                    shape = RoundedCornerShape(10.dp)
+                )
+                Button(
+                    onClick = {
+                        viewModel.bulkImportStudentsFromCsv(
+                            csvContent = csvText,
+                            defaultClass = selectedClass,
+                            defaultSession = session
+                        )
+                        csvText = ""
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("btn_bulk_import"),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = PassEmerald)
+                ) {
+                    Text("Validate & Bulk Import to Cloud", fontWeight = FontWeight.Bold)
                 }
             }
         }

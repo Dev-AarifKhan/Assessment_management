@@ -1,6 +1,7 @@
 package com.example.ui
 
 import android.app.Application
+import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.database.AppDatabase
@@ -8,6 +9,10 @@ import com.example.data.database.InitialData
 import com.example.data.entity.AssessmentEntity
 import com.example.data.entity.MarkEntryEntity
 import com.example.data.entity.StudentEntity
+import com.example.data.entity.UserEntity
+import com.example.data.firebase.FirebaseManager
+import com.example.data.firebase.SyncStatus
+import com.example.data.firebase.awaitResult
 import com.example.data.model.ClassAnalyticsSummary
 import com.example.data.model.CurrentUser
 import com.example.data.model.ResultCalculator
@@ -39,19 +44,39 @@ sealed interface NavigationDestination {
     object Reports : NavigationDestination
     object Settings : NavigationDestination
     object IdCardGenerator : NavigationDestination
+    object UserManagement : NavigationDestination
 }
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val prefs = application.getSharedPreferences("ghss_larnoo_auth_prefs", Context.MODE_PRIVATE)
+    private val firebaseAuth = FirebaseManager.getAuth(application)
+    private val firestore = FirebaseManager.getFirestore(application)
 
     private val database = AppDatabase.getInstance(application)
     val repository = SchoolRepository(
         studentDao = database.studentDao(),
         assessmentDao = database.assessmentDao(),
         markEntryDao = database.markEntryDao(),
-        configDao = database.schoolConfigDao()
+        configDao = database.schoolConfigDao(),
+        userDao = database.userDao(),
+        firestore = firestore
     )
 
-    // Current User & Role
+    val syncStatus: StateFlow<SyncStatus> = repository.syncStatus
+
+    // ==========================================
+    // Authentication State & Current User
+    // ==========================================
+    private val _isAuthenticated = MutableStateFlow(false)
+    val isAuthenticated: StateFlow<Boolean> = _isAuthenticated.asStateFlow()
+
+    private val _authLoading = MutableStateFlow(true)
+    val authLoading: StateFlow<Boolean> = _authLoading.asStateFlow()
+
+    private val _authError = MutableStateFlow<String?>(null)
+    val authError: StateFlow<String?> = _authError.asStateFlow()
+
     private val _currentUser = MutableStateFlow(CurrentUser.DEFAULT_ADMIN)
     val currentUser: StateFlow<CurrentUser> = _currentUser.asStateFlow()
 
@@ -64,7 +89,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val selectedClass = MutableStateFlow("10th")
     val selectedSubject = MutableStateFlow("Mathematics")
 
-    // Passing Percentage
+    // School Configuration Flows
     val passingPercentage: StateFlow<Double> = repository.passingPercentage.stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(5000),
@@ -75,6 +100,31 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope,
         SharingStarted.WhileSubscribed(5000),
         InitialData.SCHOOL_NAME
+    )
+
+    val schoolCode: StateFlow<String> = repository.schoolCode.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        InitialData.SCHOOL_CODE
+    )
+
+    val schoolAddress: StateFlow<String> = repository.schoolAddress.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        InitialData.SCHOOL_ADDRESS
+    )
+
+    val schoolAffiliation: StateFlow<String> = repository.schoolAffiliation.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        InitialData.SCHOOL_AFFILIATION
+    )
+
+    // Users / Staff List
+    val allUsers: StateFlow<List<UserEntity>> = repository.getAllUsers().stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        emptyList()
     )
 
     // Student Lists
@@ -104,12 +154,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    // All Assessments
+    // All Assessments & Search/Filter
     val allAssessments: StateFlow<List<AssessmentEntity>> = repository.getAllAssessments().stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(5000),
         emptyList()
     )
+
+    val assessmentSearchQuery = MutableStateFlow("")
+    val selectedAssessmentSubjectFilter = MutableStateFlow("")
 
     // Active Assessment selected for Marks Entry
     val activeAssessmentId = MutableStateFlow<String?>(null)
@@ -117,8 +170,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         allAssessments,
         activeAssessmentId
     ) { assessments, id ->
-        if (id == null) assessments.firstOrNull() else assessments.find { it.assessmentId == id }
+        if (id == null) assessments.firstOrNull() else assessments.find { it.assessmentId == id } ?: assessments.firstOrNull()
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    // All Mark Entries (reactive so Marks Entry table updates automatically on Firestore sync)
+    private val allMarkEntries: StateFlow<List<MarkEntryEntity>> = repository.getAllMarkEntries().stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        emptyList()
+    )
 
     // Marks Entry Table Data
     private val _marksRows = MutableStateFlow<List<StudentAwardRow>>(emptyList())
@@ -147,7 +207,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         activeAssessment
     ) { cls, session, subj, asm ->
         if (asm != null) {
-            repository.getClassAnalytics(cls, session, subj, asm.assessmentId).firstOrNull()
+            val targetClass = cls.ifBlank { asm.className }
+            repository.getClassAnalytics(targetClass, session, subj, asm.assessmentId).firstOrNull()
         } else {
             null
         }
@@ -158,7 +219,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val userFeedbackMessage: StateFlow<String?> = _userFeedbackMessage.asStateFlow()
 
     init {
-        // Initialize active assessment and seed data if needed
+        restoreAuthenticationState()
+
+        viewModelScope.launch {
+            repository.activeSession.collect { session ->
+                if (session.isNotBlank()) {
+                    selectedSession.value = session
+                }
+            }
+        }
+
         viewModelScope.launch {
             allAssessments.collect { list ->
                 if (activeAssessmentId.value == null && list.isNotEmpty()) {
@@ -168,17 +238,278 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         viewModelScope.launch {
-            combine(activeAssessment, allStudents, passingPercentage) { asm, students, passPct ->
-                Triple(asm, students, passPct)
-            }.collect { (asm, students, passPct) ->
+            combine(activeAssessment, allStudents, passingPercentage, allMarkEntries) { asm, students, passPct, entries ->
+                asm
+            }.collect { asm ->
                 if (asm != null) {
-                    loadMarksRowsForAssessment(asm, passPct)
+                    loadMarksRowsForAssessment(asm, passingPercentage.value)
+                } else {
+                    _marksRows.value = emptyList()
                 }
             }
         }
     }
 
+    // ==========================================
+    // Authentication Lifecycle
+    // ==========================================
+    private fun restoreAuthenticationState() {
+        viewModelScope.launch {
+            _authLoading.value = true
+            try {
+                // Ensure official admin exists in Room
+                InitialData.seedInitialData(database)
+
+                val savedUid = prefs.getString("auth_uid", null)
+                val savedEmail = prefs.getString("auth_email", null)
+                val fbUser = firebaseAuth?.currentUser
+
+                val targetEmail = fbUser?.email?.lowercase() ?: savedEmail?.lowercase()
+                val targetUid = fbUser?.uid ?: savedUid
+
+                if (!targetEmail.isNullOrBlank() && !targetUid.isNullOrBlank()) {
+                    // Check Firestore / Room user profile
+                    var userEntity = repository.getUserByUid(targetUid)
+                        ?: repository.getUserByEmail(targetEmail)
+
+                    if (firestore != null) {
+                        try {
+                            val snap = firestore.collection("users").document(targetUid).get().awaitResult()
+                            if (snap.exists()) {
+                                val active = snap.getBoolean("active") ?: true
+                                val roleStr = snap.getString("role") ?: "teacher"
+                                val nameStr = snap.getString("name") ?: "School Staff"
+                                val emailStr = (snap.getString("email") ?: targetEmail).lowercase()
+                                userEntity = UserEntity(
+                                    uid = targetUid,
+                                    name = nameStr,
+                                    email = emailStr,
+                                    role = roleStr,
+                                    active = active,
+                                    assignedSubject = snap.getString("assignedSubject") ?: "All Subjects",
+                                    assignedClass = snap.getString("assignedClass") ?: "All Classes",
+                                    createdAt = snap.getString("createdAt") ?: "",
+                                    updatedAt = snap.getString("updatedAt") ?: ""
+                                )
+                                database.userDao().insertUser(userEntity)
+                            }
+                        } catch (_: Exception) {
+                            // Offline: rely on Room cache
+                        }
+                    }
+
+                    if (userEntity != null) {
+                        if (!userEntity.active && userEntity.email != FirebaseManager.OFFICIAL_ADMIN_EMAIL) {
+                            clearSavedAuth()
+                            firebaseAuth?.signOut()
+                            _isAuthenticated.value = false
+                            _authError.value = "Account Disabled: Your staff account has been deactivated by the Administrator."
+                        } else {
+                            _currentUser.value = CurrentUser.fromUserEntity(userEntity)
+                            _isAuthenticated.value = true
+                            repository.startRealtimeSync()
+                        }
+                    } else if (targetEmail == FirebaseManager.OFFICIAL_ADMIN_EMAIL) {
+                        _currentUser.value = CurrentUser.DEFAULT_ADMIN.copy(uid = targetUid)
+                        _isAuthenticated.value = true
+                        repository.startRealtimeSync()
+                    } else {
+                        _isAuthenticated.value = false
+                    }
+                } else {
+                    _isAuthenticated.value = false
+                }
+            } catch (_: Exception) {
+                _isAuthenticated.value = false
+            } finally {
+                _authLoading.value = false
+            }
+        }
+    }
+
+    fun login(email: String, password: String) {
+        val cleanEmail = email.trim().lowercase()
+        val cleanPass = password.trim()
+        if (cleanEmail.isBlank() || cleanPass.isBlank()) {
+            _authError.value = "Please enter both email address and password."
+            return
+        }
+
+        viewModelScope.launch {
+            _authLoading.value = true
+            _authError.value = null
+            try {
+                // 1. Official Administrator Check (ghsslarnoo@gmail.com / Assets@18551421)
+                if (cleanEmail == FirebaseManager.OFFICIAL_ADMIN_EMAIL &&
+                    cleanPass == FirebaseManager.OFFICIAL_ADMIN_PASSWORD
+                ) {
+                    var adminUid = "admin-ghss-larnoo"
+                    if (firebaseAuth != null) {
+                        try {
+                            val res = firebaseAuth.signInWithEmailAndPassword(cleanEmail, cleanPass).awaitResult()
+                            res.user?.uid?.let { adminUid = it }
+                        } catch (_: Exception) {
+                            try {
+                                val res = firebaseAuth.createUserWithEmailAndPassword(cleanEmail, cleanPass).awaitResult()
+                                res.user?.uid?.let { adminUid = it }
+                            } catch (_: Exception) {
+                                // Proceed with official admin UID
+                            }
+                        }
+                    }
+
+                    val adminUser = CurrentUser.DEFAULT_ADMIN.copy(uid = adminUid)
+                    repository.upsertUser(
+                        adminUser.toUserEntity(
+                            credentialToken = FirebaseManager.encodeCredentialToken(cleanPass)
+                        )
+                    )
+                    saveAuthSession(adminUser)
+                    _currentUser.value = adminUser
+                    _isAuthenticated.value = true
+                    repository.startRealtimeSync()
+                    showFeedback("Signed in as ${adminUser.name}")
+                    _authLoading.value = false
+                    return@launch
+                }
+
+                // 2. Try Firebase Authentication signInWithEmailAndPassword
+                var authenticatedUid: String? = null
+                if (firebaseAuth != null) {
+                    try {
+                        val result = firebaseAuth.signInWithEmailAndPassword(cleanEmail, cleanPass).awaitResult()
+                        authenticatedUid = result.user?.uid
+                    } catch (_: Exception) {
+                        // Fall through to check Firestore / Room staff registry
+                    }
+                }
+
+                // 3. Verify against Firestore /users collection and Room cache
+                var matchedUser: UserEntity? = null
+                val expectedToken = FirebaseManager.encodeCredentialToken(cleanPass)
+
+                if (firestore != null) {
+                    try {
+                        val querySnap = firestore.collection("users")
+                            .whereEqualTo("email", cleanEmail)
+                            .get()
+                            .awaitResult()
+                        val doc = querySnap.documents.firstOrNull()
+                        if (doc != null) {
+                            val storedCred = doc.getString("_cred") ?: ""
+                            if (authenticatedUid != null || (storedCred.isNotBlank() && storedCred == expectedToken)) {
+                                matchedUser = UserEntity(
+                                    uid = doc.getString("uid") ?: doc.id,
+                                    name = doc.getString("name") ?: "School Staff",
+                                    email = cleanEmail,
+                                    role = doc.getString("role") ?: "teacher",
+                                    active = doc.getBoolean("active") ?: true,
+                                    assignedSubject = doc.getString("assignedSubject") ?: "All Subjects",
+                                    assignedClass = doc.getString("assignedClass") ?: "All Classes",
+                                    createdAt = doc.getString("createdAt") ?: "",
+                                    updatedAt = doc.getString("updatedAt") ?: "",
+                                    credentialToken = storedCred
+                                )
+                                database.userDao().insertUser(matchedUser)
+                            }
+                        }
+                    } catch (_: Exception) {
+                        // Offline fallback to Room
+                    }
+                }
+
+                if (matchedUser == null) {
+                    val localUser = repository.getUserByEmail(cleanEmail)
+                    if (localUser != null && (authenticatedUid != null || localUser.credentialToken == expectedToken)) {
+                        matchedUser = localUser
+                    }
+                }
+
+                if (matchedUser != null) {
+                    if (!matchedUser.active) {
+                        firebaseAuth?.signOut()
+                        clearSavedAuth()
+                        _isAuthenticated.value = false
+                        _authError.value = "Account Disabled: Your account has been disabled by the Administrator."
+                    } else {
+                        val current = CurrentUser.fromUserEntity(matchedUser)
+                        saveAuthSession(current)
+                        _currentUser.value = current
+                        _isAuthenticated.value = true
+                        repository.startRealtimeSync()
+                        showFeedback("Welcome back, ${current.name}!")
+                    }
+                } else {
+                    _authError.value = "Invalid email or password. Please verify your credentials."
+                }
+            } catch (e: Exception) {
+                _authError.value = e.localizedMessage ?: "Authentication failed. Please check your connection."
+            } finally {
+                _authLoading.value = false
+            }
+        }
+    }
+
+    fun sendPasswordReset(email: String) {
+        val cleanEmail = email.trim().lowercase()
+        if (cleanEmail.isBlank()) {
+            _authError.value = "Please enter your registered email address first."
+            return
+        }
+        viewModelScope.launch {
+            try {
+                firebaseAuth?.sendPasswordResetEmail(cleanEmail)?.awaitResult()
+                showFeedback("Password reset link sent to $cleanEmail.")
+            } catch (_: Exception) {
+                showFeedback("If $cleanEmail is registered in Firebase Auth, a reset link has been dispatched.")
+            }
+        }
+    }
+
+    fun clearAuthError() {
+        _authError.value = null
+    }
+
+    fun logout() {
+        try {
+            firebaseAuth?.signOut()
+        } catch (_: Exception) {
+        }
+        repository.stopRealtimeSync()
+        clearSavedAuth()
+        _isAuthenticated.value = false
+        _currentScreen.value = NavigationDestination.Dashboard
+        showFeedback("Signed out successfully.")
+    }
+
+    private fun saveAuthSession(user: CurrentUser) {
+        prefs.edit()
+            .putString("auth_uid", user.uid)
+            .putString("auth_email", user.email)
+            .putString("auth_name", user.name)
+            .putString("auth_role", user.role.firestoreValue)
+            .apply()
+    }
+
+    private fun clearSavedAuth() {
+        prefs.edit().clear().apply()
+    }
+
+    fun triggerManualSync() {
+        repository.startRealtimeSync()
+        showFeedback("Synchronizing records with Cloud Firestore...")
+    }
+
     fun navigateTo(destination: NavigationDestination) {
+        // Role-based access protection
+        if (_currentUser.value.role != UserRole.ADMIN &&
+            (destination == NavigationDestination.UserManagement ||
+                destination == NavigationDestination.Settings ||
+                destination == NavigationDestination.StudentRegistration)
+        ) {
+            showFeedback("Access Restricted: Only an Administrator can access this module.")
+            return
+        }
         _currentScreen.value = destination
     }
 
@@ -201,7 +532,104 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // ==========================================
-    // Student Registration
+    // User Management (Administrator Only)
+    // ==========================================
+    fun registerTeacherAccount(
+        name: String,
+        email: String,
+        password: String,
+        assignedSubject: String = "All Subjects",
+        assignedClass: String = "All Classes"
+    ): Boolean {
+        if (_currentUser.value.role != UserRole.ADMIN) {
+            showFeedback("Unauthorized: Only an Administrator can register new teachers.")
+            return false
+        }
+        val cleanName = name.trim()
+        val cleanEmail = email.trim().lowercase()
+        val cleanPass = password.trim()
+
+        if (cleanName.isBlank() || cleanEmail.isBlank() || !cleanEmail.contains("@")) {
+            showFeedback("Validation Error: Please enter a valid teacher name and email address.")
+            return false
+        }
+        if (cleanPass.length < 6) {
+            showFeedback("Validation Error: Password must be at least 6 characters long.")
+            return false
+        }
+
+        val existing = allUsers.value.find { it.email.equals(cleanEmail, ignoreCase = true) }
+        val uid = existing?.uid ?: "staff-${System.currentTimeMillis()}-${UUID.randomUUID().toString().take(6)}"
+        val nowIso = SchoolRepository.isoNow()
+
+        val newTeacher = UserEntity(
+            uid = uid,
+            name = cleanName,
+            email = cleanEmail,
+            role = "teacher",
+            active = true,
+            assignedSubject = assignedSubject.ifBlank { "All Subjects" },
+            assignedClass = assignedClass.ifBlank { "All Classes" },
+            createdAt = existing?.createdAt ?: nowIso,
+            updatedAt = nowIso,
+            credentialToken = FirebaseManager.encodeCredentialToken(cleanPass)
+        )
+
+        viewModelScope.launch {
+            repository.upsertUser(newTeacher)
+            showFeedback("Teacher account for '$cleanName' ($cleanEmail) registered and synced.")
+        }
+        return true
+    }
+
+    fun toggleUserActiveStatus(user: UserEntity) {
+        if (_currentUser.value.role != UserRole.ADMIN) {
+            showFeedback("Unauthorized: Only an Administrator can modify user status.")
+            return
+        }
+        if (user.email.equals(FirebaseManager.OFFICIAL_ADMIN_EMAIL, ignoreCase = true) ||
+            user.uid == _currentUser.value.uid
+        ) {
+            showFeedback("Cannot deactivate the primary Administrator account.")
+            return
+        }
+        val updated = user.copy(active = !user.active, updatedAt = SchoolRepository.isoNow())
+        viewModelScope.launch {
+            repository.upsertUser(updated)
+            val stateLabel = if (updated.active) "Activated" else "Disabled"
+            showFeedback("User '${user.name}' is now $stateLabel.")
+        }
+    }
+
+    fun updateUserRole(user: UserEntity, newRole: String) {
+        if (_currentUser.value.role != UserRole.ADMIN) return
+        if (user.email.equals(FirebaseManager.OFFICIAL_ADMIN_EMAIL, ignoreCase = true)) {
+            showFeedback("Cannot change role of the primary Administrator account.")
+            return
+        }
+        val updated = user.copy(role = newRole, updatedAt = SchoolRepository.isoNow())
+        viewModelScope.launch {
+            repository.upsertUser(updated)
+            showFeedback("Updated role for '${user.name}' to ${newRole.uppercase()}.")
+        }
+    }
+
+    fun deleteUserAccount(user: UserEntity) {
+        if (_currentUser.value.role != UserRole.ADMIN) return
+        if (user.email.equals(FirebaseManager.OFFICIAL_ADMIN_EMAIL, ignoreCase = true) ||
+            user.uid == _currentUser.value.uid
+        ) {
+            showFeedback("Cannot delete your own or the primary Administrator account.")
+            return
+        }
+        viewModelScope.launch {
+            repository.deleteUser(user.uid)
+            showFeedback("Removed staff account for '${user.name}'.")
+        }
+    }
+
+    // ==========================================
+    // Student Registration & Management
     // ==========================================
     fun registerStudent(
         name: String,
@@ -211,7 +639,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         academicSession: String,
         stream: String,
         phone: String,
-        customId: String? = null
+        customId: String? = null,
+        gender: String = "Male"
     ): Boolean {
         if (name.isBlank() || parentage.isBlank() || rollNumber.isBlank()) {
             showFeedback("Validation Error: Name, Parentage, and Roll Number are mandatory.")
@@ -227,23 +656,45 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             "GHSS-$sessionPrefix-$classNum$rollPadded"
         }
 
+        // Prevent duplicate student IDs
+        val duplicate = allStudents.value.any { it.studentId.equals(generatedId, ignoreCase = true) }
+        if (duplicate) {
+            showFeedback("Duplicate Student ID '$generatedId': A student with this ID already exists.")
+            return false
+        }
+
         val student = StudentEntity(
             studentId = generatedId,
             name = name.trim(),
             parentage = parentage.trim(),
-            className = className,
+            className = SchoolRepository.normalizeClassName(className),
             rollNumber = rollNumber.trim(),
             academicSession = academicSession,
             stream = stream,
             phone = phone.trim(),
+            gender = gender,
             admissionDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
         )
 
         viewModelScope.launch {
             repository.registerStudent(student)
-            showFeedback("Student '${student.name}' registered successfully with ID: ${student.studentId}")
-            // Select as current
+            showFeedback("Student '${student.name}' registered & synced with ID: ${student.studentId}")
             selectedStudentForSummary.value = student
+        }
+        return true
+    }
+
+    fun updateStudent(student: StudentEntity): Boolean {
+        if (student.name.isBlank() || student.parentage.isBlank() || student.rollNumber.isBlank()) {
+            showFeedback("Validation Error: Name, Parentage, and Roll Number cannot be empty.")
+            return false
+        }
+        viewModelScope.launch {
+            repository.updateStudent(student)
+            if (selectedStudentForSummary.value?.studentId == student.studentId) {
+                selectedStudentForSummary.value = student
+            }
+            showFeedback("Student record for '${student.name}' updated and synced.")
         }
         return true
     }
@@ -260,9 +711,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             showFeedback("No student records provided for bulk import.")
             return
         }
+        // Deduplicate by studentId (case-insensitive)
+        val uniqueStudents = students
+            .filter { it.studentId.isNotBlank() && it.name.isNotBlank() }
+            .distinctBy { it.studentId.trim().lowercase() }
+
         viewModelScope.launch {
-            repository.bulkRegisterStudents(students)
-            showFeedback("Successfully bulk imported ${students.size} student records into database.")
+            repository.bulkRegisterStudents(uniqueStudents)
+            showFeedback("Successfully imported & synced ${uniqueStudents.size} student records to Cloud Firestore.")
         }
     }
 
@@ -284,17 +740,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         val newAssessment = AssessmentEntity(
-            assessmentId = UUID.randomUUID().toString(), // Guarantee preservation without overwriting
+            assessmentId = "ASM-${System.currentTimeMillis()}-${UUID.randomUUID().toString().take(4)}",
             name = name.trim(),
             type = type,
             subject = subject.trim(),
-            className = className,
+            className = SchoolRepository.normalizeClassName(className),
             academicSession = academicSession,
             assessmentDate = assessmentDate.ifBlank {
                 SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
             },
             maxMarks = maxMarks,
-            passingPercentage = passingPercentage.value
+            passingPercentage = passingPercentage.value,
+            isLocked = false
         )
 
         viewModelScope.launch {
@@ -303,9 +760,45 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             selectedSubject.value = newAssessment.subject
             selectedClass.value = newAssessment.className
             selectedSession.value = newAssessment.academicSession
-            showFeedback("Assessment '${newAssessment.name} (${newAssessment.subject})' created with unique ID.")
+            showFeedback("Assessment '${newAssessment.name} (${newAssessment.subject})' created & synced.")
         }
         return true
+    }
+
+    fun updateAssessment(assessment: AssessmentEntity): Boolean {
+        if (assessment.name.isBlank() || assessment.subject.isBlank() || assessment.maxMarks <= 0) {
+            showFeedback("Validation Error: Assessment Name, Subject, and valid Max Marks are required.")
+            return false
+        }
+        viewModelScope.launch {
+            repository.updateAssessment(assessment)
+            showFeedback("Assessment '${assessment.name}' updated & synced.")
+        }
+        return true
+    }
+
+    fun toggleAssessmentLock(assessment: AssessmentEntity) {
+        val updated = assessment.copy(isLocked = !assessment.isLocked)
+        viewModelScope.launch {
+            repository.updateAssessment(updated)
+            val statusMsg = if (updated.isLocked) "Locked (Finalized)" else "Unlocked for Editing"
+            showFeedback("Assessment '${assessment.name}' is now $statusMsg.")
+        }
+    }
+
+    fun deleteAssessment(assessment: AssessmentEntity) {
+        if (_currentUser.value.role != UserRole.ADMIN) {
+            showFeedback("Unauthorized: Only an Administrator can delete assessments.")
+            return
+        }
+        if (assessment.isLocked) {
+            showFeedback("Protected: Unlock this finalized assessment before deleting.")
+            return
+        }
+        viewModelScope.launch {
+            repository.deleteAssessment(assessment)
+            showFeedback("Assessment '${assessment.name}' deleted.")
+        }
     }
 
     fun selectAssessment(assessment: AssessmentEntity) {
@@ -320,8 +813,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // ==========================================
     private fun loadMarksRowsForAssessment(assessment: AssessmentEntity, passPct: Double) {
         viewModelScope.launch {
+            val normalizedClass = SchoolRepository.normalizeClassName(assessment.className)
             val enrolledStudents = allStudents.value.filter {
-                it.className == assessment.className && it.academicSession == assessment.academicSession
+                SchoolRepository.normalizeClassName(it.className) == normalizedClass &&
+                    (it.academicSession == assessment.academicSession || assessment.academicSession.isBlank())
             }.sortedWith(compareBy({ it.rollNumber.toIntOrNull() ?: 999 }, { it.name }))
 
             val existingEntries = repository.getEntriesForAssessment(assessment.assessmentId).firstOrNull() ?: emptyList()
@@ -331,19 +826,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val entry = entriesMap[student.studentId]
                 val obtainedVal = entry?.obtainedMarks
                 val statusVal = entry?.status ?: "Present"
+                val effectivePassPct = if (assessment.passingPercentage > 0) assessment.passingPercentage else passPct
                 val resultStatus = entry?.result ?: ResultCalculator.computeResultStatus(
                     obtained = obtainedVal,
                     maxMarks = assessment.maxMarks,
-                    passingPercentage = assessment.passingPercentage,
+                    passingPercentage = effectivePassPct,
                     status = statusVal
                 )
 
                 StudentAwardRow(
                     serialNumber = index + 1,
                     student = student,
-                    markEntryId = entry?.markEntryId,
+                    markEntryId = entry?.markEntryId ?: "ME-${assessment.assessmentId}-${student.studentId}",
                     maxMarks = assessment.maxMarks,
-                    obtainedMarksText = obtainedVal?.let { if (it % 1.0 == 0.0) it.toInt().toString() else it.toString() } ?: "",
+                    obtainedMarksText = obtainedVal?.let {
+                        if (it % 1.0 == 0.0) it.toInt().toString() else it.toString()
+                    } ?: "",
                     obtainedMarks = obtainedVal,
                     status = statusVal,
                     result = resultStatus,
@@ -360,6 +858,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         newStatus: String = "Present",
         remarks: String = ""
     ) {
+        val asm = activeAssessment.value
+        if (asm?.isLocked == true) {
+            showFeedback("Assessment '${asm.name}' is locked. Unlock it first to modify marks.")
+            return
+        }
+
         val currentRows = _marksRows.value.toMutableList()
         val index = currentRows.indexOfFirst { it.student.studentId == studentId }
         if (index == -1) return
@@ -375,7 +879,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             else -> parsedMarks
         }
 
-        val asm = activeAssessment.value
         val passPct = asm?.passingPercentage ?: passingPercentage.value
         val calculatedResult = ResultCalculator.computeResultStatus(
             obtained = validMarks,
@@ -396,10 +899,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun saveAllMarks() {
         val asm = activeAssessment.value ?: return
+        if (asm.isLocked) {
+            showFeedback("Assessment '${asm.name}' is locked and cannot be modified.")
+            return
+        }
         viewModelScope.launch {
             val entities = _marksRows.value.map { row ->
                 MarkEntryEntity(
-                    markEntryId = row.markEntryId ?: UUID.randomUUID().toString(),
+                    markEntryId = row.markEntryId ?: "ME-${asm.assessmentId}-${row.student.studentId}",
                     assessmentId = asm.assessmentId,
                     studentId = row.student.studentId,
                     academicSession = asm.academicSession,
@@ -414,7 +921,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 )
             }
             repository.saveBatchMarkEntries(entities)
-            showFeedback("Marks Award Sheet for '${asm.subject}' successfully saved and locked.")
+            showFeedback("Marks Award Sheet for '${asm.subject}' saved & synced to Cloud Firestore.")
         }
     }
 
@@ -446,13 +953,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // ==========================================
-    // Settings & Passing Percentage
+    // Settings & School Configuration
     // ==========================================
     fun updatePassingPercentage(newPercentage: Double) {
         if (newPercentage in 1.0..100.0) {
             viewModelScope.launch {
                 repository.updatePassingPercentage(newPercentage)
-                showFeedback("Passing threshold updated to $newPercentage%.")
+                showFeedback("Passing threshold updated to $newPercentage% & synced.")
             }
         }
     }
@@ -461,7 +968,33 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         selectedSession.value = newSession
         viewModelScope.launch {
             repository.updateActiveSession(newSession)
-            showFeedback("Active academic session set to $newSession.")
+            showFeedback("Active academic session set to $newSession & synced.")
+        }
+    }
+
+    fun updateFullSchoolSettings(
+        name: String,
+        code: String,
+        address: String,
+        affiliation: String,
+        passingPct: Double,
+        session: String
+    ) {
+        if (_currentUser.value.role != UserRole.ADMIN) {
+            showFeedback("Unauthorized: Only an Administrator can modify school settings.")
+            return
+        }
+        selectedSession.value = session
+        viewModelScope.launch {
+            repository.updateFullSchoolConfig(
+                name = name,
+                code = code,
+                address = address,
+                affiliation = affiliation,
+                passingPct = passingPct.coerceIn(1.0, 100.0),
+                session = session
+            )
+            showFeedback("School configuration saved & synced to Cloud Firestore.")
         }
     }
 
@@ -470,7 +1003,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val s = result.student
         return buildString {
             appendLine("==================================================")
-            appendLine("  ${InitialData.SCHOOL_NAME.uppercase(Locale.getDefault())}")
+            appendLine("  ${schoolName.value.uppercase(Locale.getDefault())}")
             appendLine("             OFFICIAL RESULT MARKSHEET            ")
             appendLine("==================================================")
             appendLine("Student Name:    ${s.name}")
@@ -504,7 +1037,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun generateAwardRollContent(asm: AssessmentEntity, rows: List<StudentAwardRow>): String {
         return buildString {
             appendLine("================================================================")
-            appendLine("     ${InitialData.SCHOOL_NAME.uppercase(Locale.getDefault())}")
+            appendLine("     ${schoolName.value.uppercase(Locale.getDefault())}")
             appendLine("                     MARKS AWARD ROLL                         ")
             appendLine("================================================================")
             appendLine("Subject:          ${asm.subject}")
@@ -517,14 +1050,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             appendLine("----------------------------------------------------------------")
             for (row in rows) {
                 val marksStr = row.obtainedMarks?.toString() ?: row.status
-                appendLine(String.format("%-4d %-20s %-12s %-6s %-6s %-7s",
-                    row.serialNumber,
-                    row.student.name.take(19),
-                    row.student.studentId,
-                    row.student.rollNumber,
-                    marksStr,
-                    row.result
-                ))
+                appendLine(
+                    String.format(
+                        "%-4d %-20s %-12s %-6s %-6s %-7s",
+                        row.serialNumber,
+                        row.student.name.take(19),
+                        row.student.studentId,
+                        row.student.rollNumber,
+                        marksStr,
+                        row.result
+                    )
+                )
             }
             appendLine("----------------------------------------------------------------")
             appendLine("Submitted by Subject Teacher: _________________________")

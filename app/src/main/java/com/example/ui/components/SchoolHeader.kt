@@ -2,6 +2,7 @@ package com.example.ui.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,13 +16,17 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AdminPanelSettings
+import androidx.compose.material.icons.filled.CloudDone
+import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.School
-import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -38,17 +43,22 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
+import com.example.data.firebase.SyncStatus
 import com.example.data.model.CurrentUser
 import com.example.data.model.UserRole
 import com.example.ui.theme.AmberGold
 import com.example.ui.theme.NavyDark
 import com.example.ui.theme.NavyPrimary
+import com.example.ui.theme.PassEmerald
 
 @Composable
 fun SchoolHeader(
     currentUser: CurrentUser,
     activeSession: String,
-    onSwitchRoleClick: () -> Unit,
+    syncStatus: SyncStatus = SyncStatus.SYNCED,
+    onSettingsClick: () -> Unit = {},
+    onLogoutClick: () -> Unit = {},
+    onSyncClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -79,7 +89,7 @@ fun SchoolHeader(
                         // School Logo Crest
                         Box(
                             modifier = Modifier
-                                .size(48.dp)
+                                .size(46.dp)
                                 .clip(CircleShape)
                                 .background(Color.White)
                                 .padding(2.dp),
@@ -89,12 +99,12 @@ fun SchoolHeader(
                                 painter = painterResource(id = R.drawable.ic_school_logo),
                                 contentDescription = "GHSS Larnoo Crest",
                                 modifier = Modifier
-                                    .size(44.dp)
+                                    .size(42.dp)
                                     .clip(CircleShape)
                             )
                         }
 
-                        Spacer(modifier = Modifier.width(12.dp))
+                        Spacer(modifier = Modifier.width(10.dp))
 
                         Column {
                             Text(
@@ -102,7 +112,7 @@ fun SchoolHeader(
                                 style = MaterialTheme.typography.labelSmall,
                                 color = AmberGold,
                                 fontWeight = FontWeight.Bold,
-                                letterSpacing = 1.sp
+                                letterSpacing = 0.8.sp
                             )
                             Text(
                                 text = "LARNOO, ANANTNAG",
@@ -113,82 +123,143 @@ fun SchoolHeader(
                                 overflow = TextOverflow.Ellipsis
                             )
                             Text(
-                                text = "Assessment & Result Management",
+                                text = "Continuous Assessment & Result Portal",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Color.White.copy(alpha = 0.8f)
+                                color = Color.White.copy(alpha = 0.8f),
+                                fontSize = 11.sp
                             )
                         }
                     }
 
-                    // Role switch button
-                    FilledTonalButton(
-                        onClick = onSwitchRoleClick,
-                        modifier = Modifier
-                            .testTag("role_switch_button"),
-                        colors = ButtonDefaults.filledTonalButtonColors(
-                            containerColor = Color.White.copy(alpha = 0.15f),
-                            contentColor = Color.White
-                        ),
-                        shape = RoundedCornerShape(12.dp),
-                        contentPadding = ButtonDefaults.ButtonWithIconContentPadding
-                    ) {
-                        Icon(
-                            imageVector = if (currentUser.role == UserRole.ADMIN) Icons.Default.AdminPanelSettings else Icons.Default.School,
-                            contentDescription = "Role",
-                            modifier = Modifier.size(16.dp),
-                            tint = AmberGold
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = if (currentUser.role == UserRole.ADMIN) "Admin" else "Teacher",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (currentUser.role == UserRole.ADMIN) {
+                            IconButton(
+                                onClick = onSettingsClick,
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Settings,
+                                    contentDescription = "Settings",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+
                         Spacer(modifier = Modifier.width(4.dp))
-                        Icon(
-                            imageVector = Icons.Default.SwapHoriz,
-                            contentDescription = "Switch",
-                            modifier = Modifier.size(14.dp)
-                        )
+
+                        FilledTonalButton(
+                            onClick = onLogoutClick,
+                            modifier = Modifier.testTag("btn_logout"),
+                            colors = ButtonDefaults.filledTonalButtonColors(
+                                containerColor = Color.White.copy(alpha = 0.15f),
+                                contentColor = Color.White
+                            ),
+                            shape = RoundedCornerShape(10.dp),
+                            contentPadding = ButtonDefaults.ButtonWithIconContentPadding
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.Logout,
+                                contentDescription = "Sign Out",
+                                modifier = Modifier.size(15.dp),
+                                tint = AmberGold
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Sign Out",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Bottom strip: Active session badge & User status
+                // Bottom strip: Active session badge, Cloud Sync badge & Authenticated User status
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Surface(
-                        color = Color.White.copy(alpha = 0.12f),
-                        shape = RoundedCornerShape(8.dp)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                        Surface(
+                            color = Color.White.copy(alpha = 0.12f),
+                            shape = RoundedCornerShape(8.dp)
                         ) {
-                            Text(
-                                text = "Session: ",
-                                color = Color.White.copy(alpha = 0.7f),
-                                fontSize = 11.sp
-                            )
-                            Text(
-                                text = activeSession,
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 11.sp
-                            )
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Session: ",
+                                    color = Color.White.copy(alpha = 0.7f),
+                                    fontSize = 11.sp
+                                )
+                                Text(
+                                    text = activeSession,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 11.sp
+                                )
+                            }
+                        }
+
+                        // Cloud Sync Status Pill
+                        Surface(
+                            color = Color.White.copy(alpha = 0.12f),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.clickable(onClick = onSyncClick)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = when (syncStatus) {
+                                        SyncStatus.SYNCED -> Icons.Default.CloudDone
+                                        SyncStatus.SYNCING -> Icons.Default.CloudSync
+                                        else -> Icons.Default.CloudOff
+                                    },
+                                    contentDescription = syncStatus.label,
+                                    tint = when (syncStatus) {
+                                        SyncStatus.SYNCED -> PassEmerald
+                                        SyncStatus.SYNCING -> AmberGold
+                                        else -> Color.LightGray
+                                    },
+                                    modifier = Modifier.size(13.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = syncStatus.label,
+                                    color = Color.White,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
                         }
                     }
 
-                    Text(
-                        text = if (currentUser.role == UserRole.ADMIN) "Master Admin Mode" else "Teacher: ${currentUser.assignedSubject} (${currentUser.assignedClass})",
-                        color = AmberGold,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = if (currentUser.role == UserRole.ADMIN) Icons.Default.AdminPanelSettings else Icons.Default.School,
+                            contentDescription = null,
+                            tint = AmberGold,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "${currentUser.name.take(22)} (${if (currentUser.role == UserRole.ADMIN) "Admin" else "Teacher"})",
+                            color = AmberGold,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
             }
         }

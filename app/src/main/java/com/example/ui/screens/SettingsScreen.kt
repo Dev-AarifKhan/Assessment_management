@@ -19,12 +19,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.ManageAccounts
 import androidx.compose.material.icons.filled.Percent
 import androidx.compose.material.icons.filled.School
-import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -33,7 +33,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -60,8 +59,8 @@ import com.example.R
 import com.example.data.database.InitialData
 import com.example.data.model.UserRole
 import com.example.ui.MainViewModel
+import com.example.ui.NavigationDestination
 import com.example.ui.theme.AmberGold
-import com.example.ui.theme.NavyLight
 import com.example.ui.theme.NavyPrimary
 import com.example.ui.theme.PassEmerald
 
@@ -74,11 +73,20 @@ fun SettingsScreen(
     val currentUser by viewModel.currentUser.collectAsState()
     val passingPercentage by viewModel.passingPercentage.collectAsState()
     val activeSession by viewModel.selectedSession.collectAsState()
+    val schoolName by viewModel.schoolName.collectAsState()
+    val schoolCode by viewModel.schoolCode.collectAsState()
+    val schoolAddress by viewModel.schoolAddress.collectAsState()
+    val schoolAffiliation by viewModel.schoolAffiliation.collectAsState()
 
-    var passingText by remember(passingPercentage) {
-        mutableStateOf(passingPercentage.toInt().toString())
-    }
+    var nameInput by remember(schoolName) { mutableStateOf(schoolName) }
+    var codeInput by remember(schoolCode) { mutableStateOf(schoolCode) }
+    var addressInput by remember(schoolAddress) { mutableStateOf(schoolAddress) }
+    var affiliationInput by remember(schoolAffiliation) { mutableStateOf(schoolAffiliation) }
+    var passingText by remember(passingPercentage) { mutableStateOf(passingPercentage.toInt().toString()) }
+    var selectedSessionInput by remember(activeSession) { mutableStateOf(activeSession) }
     var sessionDropdownOpen by remember { mutableStateOf(false) }
+
+    val isAdmin = currentUser.role == UserRole.ADMIN
 
     Column(
         modifier = modifier
@@ -87,22 +95,36 @@ fun SettingsScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Title
-        Column {
-            Text(
-                text = "System Configuration",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Text(
-                text = "Evaluation rules, passing thresholds, and role preferences",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = "School Settings & Configuration",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "Synced with Firestore /config/school & local Room cache",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            OutlinedButton(
+                onClick = { viewModel.syncCloudData() },
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Icon(Icons.Default.CloudSync, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Sync", fontSize = 12.sp)
+            }
         }
 
-        // Passing Percentage Configuration Card (Mandated Requirement)
+        // Passing Percentage Configuration Card
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(14.dp),
@@ -130,7 +152,7 @@ fun SettingsScreen(
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "Default: 35% minimum passing criteria",
+                                text = "Minimum passing criteria across marksheets & reports",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -165,6 +187,7 @@ fun SettingsScreen(
                                 passingText = input
                             }
                         },
+                        enabled = isAdmin,
                         label = { Text("Passing Threshold (%)") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier
@@ -179,6 +202,7 @@ fun SettingsScreen(
                             val value = passingText.toDoubleOrNull() ?: 35.0
                             viewModel.updatePassingPercentage(value)
                         },
+                        enabled = isAdmin,
                         colors = ButtonDefaults.buttonColors(containerColor = NavyPrimary),
                         shape = RoundedCornerShape(10.dp),
                         modifier = Modifier
@@ -193,47 +217,96 @@ fun SettingsScreen(
             }
         }
 
-        // Active Academic Session Card
+        // Editable Institution Profile Card (/config/school)
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(14.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.DateRange,
-                        contentDescription = null,
-                        tint = AmberGold,
-                        modifier = Modifier.size(24.dp)
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_school_logo),
+                        contentDescription = "School Logo",
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .background(Color.White)
+                            .padding(2.dp)
                     )
-                    Spacer(modifier = Modifier.width(10.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text(
-                            text = "Active Academic Session",
+                            text = "Institution Configuration (/config/school)",
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            color = NavyPrimary
                         )
                         Text(
-                            text = "Class history preserved across academic sessions",
+                            text = "Reflected on marksheets, award rolls, ID cards & reports",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
+                OutlinedTextField(
+                    value = nameInput,
+                    onValueChange = { nameInput = it },
+                    enabled = isAdmin,
+                    label = { Text("School Name") },
+                    leadingIcon = { Icon(Icons.Default.School, contentDescription = null) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = RoundedCornerShape(10.dp)
+                )
+
+                OutlinedTextField(
+                    value = codeInput,
+                    onValueChange = { codeInput = it },
+                    enabled = isAdmin,
+                    label = { Text("School UDISE / Code") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = RoundedCornerShape(10.dp)
+                )
+
+                OutlinedTextField(
+                    value = addressInput,
+                    onValueChange = { addressInput = it },
+                    enabled = isAdmin,
+                    label = { Text("School Address") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = RoundedCornerShape(10.dp)
+                )
+
+                OutlinedTextField(
+                    value = affiliationInput,
+                    onValueChange = { affiliationInput = it },
+                    enabled = isAdmin,
+                    label = { Text("Board Affiliation") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = RoundedCornerShape(10.dp)
+                )
 
                 ExposedDropdownMenuBox(
                     expanded = sessionDropdownOpen,
-                    onExpandedChange = { sessionDropdownOpen = !sessionDropdownOpen }
+                    onExpandedChange = { if (isAdmin) sessionDropdownOpen = !sessionDropdownOpen }
                 ) {
                     OutlinedTextField(
-                        value = activeSession,
+                        value = selectedSessionInput,
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Active Session") },
+                        enabled = isAdmin,
+                        label = { Text("Active Academic Session") },
+                        leadingIcon = { Icon(Icons.Default.DateRange, contentDescription = null) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = sessionDropdownOpen) },
                         modifier = Modifier
                             .menuAnchor()
@@ -248,6 +321,7 @@ fun SettingsScreen(
                             DropdownMenuItem(
                                 text = { Text(sess) },
                                 onClick = {
+                                    selectedSessionInput = sess
                                     viewModel.updateActiveSession(sess)
                                     sessionDropdownOpen = false
                                 }
@@ -255,107 +329,73 @@ fun SettingsScreen(
                         }
                     }
                 }
-            }
-        }
 
-        // Role Switching Card (Admin & Teacher)
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = "User Role Management",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Switch between Admin and Teacher roles to experience role permissions.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = { viewModel.switchRole(UserRole.ADMIN) },
-                        colors = if (currentUser.role == UserRole.ADMIN)
-                            ButtonDefaults.outlinedButtonColors(containerColor = NavyPrimary.copy(alpha = 0.1f))
-                        else ButtonDefaults.outlinedButtonColors(),
+                if (isAdmin) {
+                    Button(
+                        onClick = {
+                            val pct = passingText.toDoubleOrNull() ?: passingPercentage
+                            viewModel.updateSchoolConfig(
+                                name = nameInput,
+                                code = codeInput,
+                                address = addressInput,
+                                affiliation = affiliationInput,
+                                passingPct = pct,
+                                session = selectedSessionInput
+                            )
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = NavyPrimary),
                         shape = RoundedCornerShape(10.dp),
                         modifier = Modifier
-                            .weight(1f)
-                            .testTag("switch_to_admin")
+                            .fillMaxWidth()
+                            .height(48.dp)
+                            .testTag("btn_save_school_config")
                     ) {
-                        Icon(Icons.Default.AdminPanelSettings, contentDescription = null, tint = NavyPrimary)
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Admin", fontWeight = FontWeight.Bold)
-                    }
-
-                    OutlinedButton(
-                        onClick = { viewModel.switchRole(UserRole.TEACHER) },
-                        colors = if (currentUser.role == UserRole.TEACHER)
-                            ButtonDefaults.outlinedButtonColors(containerColor = AmberGold.copy(alpha = 0.1f))
-                        else ButtonDefaults.outlinedButtonColors(),
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("switch_to_teacher")
-                    ) {
-                        Icon(Icons.Default.School, contentDescription = null, tint = AmberGold)
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Teacher", fontWeight = FontWeight.Bold)
+                        Icon(Icons.Default.Check, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Save School Configuration to Cloud", fontWeight = FontWeight.Bold)
                     }
                 }
             }
         }
 
-        // School Information Card
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
+        // User Management Shortcut Card for Admin
+        if (isAdmin) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.ic_school_logo),
-                    contentDescription = "School Logo",
+                Row(
                     modifier = Modifier
-                        .size(56.dp)
-                        .clip(CircleShape)
-                        .background(Color.White)
-                        .padding(2.dp)
-                )
-
-                Spacer(modifier = Modifier.width(14.dp))
-
-                Column {
-                    Text(
-                        text = "Institution Profile",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(text = InitialData.SCHOOL_NAME, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                    Text(text = "UDISE / Code: 01061601505 (GHSS-LRN)", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(text = "Zone: Larnoo, District: Anantnag, J&K", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(text = "Affiliation: JKBOSE State Board", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "User & Teacher Accounts",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = NavyPrimary
+                        )
+                        Text(
+                            text = "Create teacher accounts, manage roles, or enable/disable users.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Button(
+                        onClick = { viewModel.navigateTo(NavigationDestination.UserManagement) },
+                        colors = ButtonDefaults.buttonColors(containerColor = AmberGold),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Icon(Icons.Default.ManageAccounts, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Manage", fontWeight = FontWeight.Bold)
+                    }
                 }
             }
         }

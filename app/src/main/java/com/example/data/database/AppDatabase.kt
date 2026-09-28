@@ -9,10 +9,12 @@ import com.example.data.dao.AssessmentDao
 import com.example.data.dao.MarkEntryDao
 import com.example.data.dao.SchoolConfigDao
 import com.example.data.dao.StudentDao
+import com.example.data.dao.UserDao
 import com.example.data.entity.AssessmentEntity
 import com.example.data.entity.MarkEntryEntity
 import com.example.data.entity.SchoolConfigEntity
 import com.example.data.entity.StudentEntity
+import com.example.data.entity.UserEntity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -22,9 +24,10 @@ import kotlinx.coroutines.launch
         StudentEntity::class,
         AssessmentEntity::class,
         MarkEntryEntity::class,
-        SchoolConfigEntity::class
+        SchoolConfigEntity::class,
+        UserEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -33,6 +36,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun assessmentDao(): AssessmentDao
     abstract fun markEntryDao(): MarkEntryDao
     abstract fun schoolConfigDao(): SchoolConfigDao
+    abstract fun userDao(): UserDao
 
     companion object {
         @Volatile
@@ -58,7 +62,6 @@ abstract class AppDatabase : RoomDatabase() {
         ) : RoomDatabase.Callback() {
             override fun onCreate(db: SupportSQLiteDatabase) {
                 super.onCreate(db)
-                // Seed initial data asynchronously on first creation
                 CoroutineScope(Dispatchers.IO).launch {
                     val database = getInstance(context)
                     InitialData.seedInitialData(database)

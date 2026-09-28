@@ -9,6 +9,9 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface MarkEntryDao {
+    @Query("SELECT * FROM marks_entries ORDER BY updatedAt DESC")
+    fun getAllEntries(): Flow<List<MarkEntryEntity>>
+
     @Query("SELECT * FROM marks_entries WHERE assessmentId = :assessmentId ORDER BY studentId ASC")
     fun getEntriesForAssessment(assessmentId: String): Flow<List<MarkEntryEntity>>
 
@@ -37,4 +40,10 @@ interface MarkEntryDao {
 
     @Query("DELETE FROM marks_entries WHERE assessmentId = :assessmentId")
     suspend fun deleteEntriesForAssessment(assessmentId: String)
+
+    @Query("DELETE FROM marks_entries WHERE studentId = :studentId")
+    suspend fun deleteEntriesForStudent(studentId: String)
+
+    @Query("DELETE FROM marks_entries WHERE markEntryId = :markEntryId")
+    suspend fun deleteEntryById(markEntryId: String)
 }

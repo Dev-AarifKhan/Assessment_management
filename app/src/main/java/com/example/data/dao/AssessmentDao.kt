@@ -14,6 +14,9 @@ interface AssessmentDao {
     @Query("SELECT * FROM assessments ORDER BY createdAt DESC")
     fun getAllAssessments(): Flow<List<AssessmentEntity>>
 
+    @Query("SELECT * FROM assessments ORDER BY createdAt DESC")
+    suspend fun getAllAssessmentsDirect(): List<AssessmentEntity>
+
     @Query("""
         SELECT * FROM assessments 
         WHERE (:className = '' OR className = :className)
@@ -46,4 +49,7 @@ interface AssessmentDao {
 
     @Delete
     suspend fun deleteAssessment(assessment: AssessmentEntity)
+
+    @Query("DELETE FROM assessments WHERE assessmentId = :assessmentId")
+    suspend fun deleteAssessmentById(assessmentId: String)
 }
