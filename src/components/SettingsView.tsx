@@ -162,24 +162,22 @@ export const SettingsView: React.FC<{ onOpenVercelModal: () => void }> = ({ onOp
       <div className="p-6 rounded-2xl border border-rose-200 dark:border-rose-900/50 bg-rose-50/50 dark:bg-rose-950/20 shadow-sm flex items-center justify-between">
         <div>
           <h4 className="text-sm font-bold text-rose-800 dark:text-rose-300">
-            Reset All Data to Factory Defaults
+            Clear Local Cache & Reset Configuration
           </h4>
           <p className="text-xs text-rose-600 dark:text-rose-400 mt-0.5">
-            Restores initial sample data for students, assessments, and marks entries.
+            Resets local cache and restores default institutional configuration for GHSS Larnoo.
           </p>
         </div>
         <button
           onClick={async () => {
-            if (confirm('Are you sure you want to reset all data to default samples?')) {
-              await resetToDefaults();
-              setSavedToast(true);
-              setTimeout(() => setSavedToast(false), 3000);
-            }
+            await resetToDefaults();
+            setSavedToast(true);
+            setTimeout(() => setSavedToast(false), 3000);
           }}
           className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs shadow transition"
         >
           <RotateCcw size={15} />
-          <span>Reset Sample Data</span>
+          <span>Reset Configuration</span>
         </button>
       </div>
     </div>

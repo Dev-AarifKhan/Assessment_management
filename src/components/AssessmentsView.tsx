@@ -49,7 +49,8 @@ export const AssessmentsView: React.FC = () => {
     }
 
     const normClass = normalizeClassName(formData.className);
-    const newId = `ASM-${config.activeSession.slice(-2)}-${normClass}-${formData.subject.slice(0, 3).toUpperCase()}-${Date.now().toString().slice(-4)}`;
+    const safeSubj = formData.subject.replace(/[^a-zA-Z0-9]/g, '').slice(0, 3).toUpperCase() || 'SUB';
+    const newId = `ASM-${config.activeSession.slice(-2)}-${normClass}-${safeSubj}-${Date.now().toString().slice(-4)}`;
     const newAssessment: Assessment = {
       ...formData,
       className: normClass,

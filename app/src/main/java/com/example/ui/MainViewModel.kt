@@ -125,7 +125,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val marksRows: StateFlow<List<StudentAwardRow>> = _marksRows.asStateFlow()
 
     // Student Result Search & Summary State
-    val resultSearchQuery = MutableStateFlow("GHSS-25-1001")
+    val resultSearchQuery = MutableStateFlow("")
     val selectedStudentForSummary = MutableStateFlow<StudentEntity?>(null)
 
     val studentComprehensiveResult: StateFlow<StudentComprehensiveResult?> = combine(

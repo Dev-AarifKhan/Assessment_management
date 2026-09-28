@@ -33,57 +33,22 @@ export const BulkImportStudentsModal: React.FC<BulkImportStudentsModalProps> = (
 
   if (!isOpen) return null;
 
-  // Generate Sample Data for Template Download
-  const generateSampleData = () => [
-    {
-      "StudentId": "STU101",
-      "Name": "Mohammad Umar Lone",
-      "Parentage": "Abdul Rashid Lone",
-      "Class": "10th",
-      "RollNumber": "15",
-      "Stream": "General",
-      "Phone": "9419011223",
-      "Gender": "Male",
-      "Session": config.activeSession || "2025-2026"
-    },
-    {
-      "StudentId": "STU102",
-      "Name": "Zainab Fatima",
-      "Parentage": "Showkat Ahmad Rather",
-      "Class": "10th",
-      "RollNumber": "16",
-      "Stream": "General",
-      "Phone": "9419099887",
-      "Gender": "Female",
-      "Session": config.activeSession || "2025-2026"
-    },
-    {
-      "StudentId": "STU103",
-      "Name": "Danish Nazir Bhat",
-      "Parentage": "Nazir Ahmad Bhat",
-      "Class": "12th",
-      "RollNumber": "04",
-      "Stream": "Medical",
-      "Phone": "9797055443",
-      "Gender": "Male",
-      "Session": config.activeSession || "2025-2026"
-    },
-    {
-      "StudentId": "STU104",
-      "Name": "Iqra Bashir",
-      "Parentage": "Bashir Ahmad Wani",
-      "Class": "11th",
-      "RollNumber": "09",
-      "Stream": "Non-Medical",
-      "Phone": "9622088776",
-      "Gender": "Female",
-      "Session": config.activeSession || "2025-2026"
-    }
-  ];
-
+  // Generate Clean Header-Only Template for Download
   const downloadTemplate = (format: 'csv' | 'xlsx') => {
-    const data = generateSampleData();
-    const ws = XLSX.utils.json_to_sheet(data);
+    const headers = [
+      [
+        "StudentId",
+        "Name",
+        "Parentage",
+        "Class",
+        "RollNumber",
+        "Stream",
+        "Phone",
+        "Gender",
+        "Session"
+      ]
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(headers);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Students_Template");
 
@@ -305,7 +270,7 @@ export const BulkImportStudentsModal: React.FC<BulkImportStudentsModalProps> = (
                 <FileText size={14} /> Need a template with the correct column headers?
               </h4>
               <p className="text-xs text-indigo-700 dark:text-indigo-400">
-                Download a pre-formatted template with sample student entries (StudentId, Name, Parentage, Class, RollNumber, Stream, Phone, Gender, Session).
+                Download a clean column header template (StudentId, Name, Parentage, Class, RollNumber, Stream, Phone, Gender, Session).
               </p>
             </div>
             <div className="flex items-center gap-2">

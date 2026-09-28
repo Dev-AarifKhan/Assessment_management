@@ -201,7 +201,7 @@ export const LoginView: React.FC = () => {
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="e.g. principal@ghsslarnoo.edu or teacher@school.org"
+                      placeholder="e.g. ghsslarnoo@gmail.com"
                       className="w-full pl-10 pr-4 py-2.5 bg-slate-950/70 border border-slate-700/80 rounded-xl text-white text-xs sm:text-sm placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
                       autoComplete="username"
                     />
@@ -266,58 +266,6 @@ export const LoginView: React.FC = () => {
                     </>
                   )}
                 </button>
-
-                {/* Institutional Sign-In & First-Time Admin Provisioning */}
-                <div className="mt-4 pt-3.5 border-t border-slate-800/80 space-y-2.5">
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      setError(null);
-                      setSuccessMessage(null);
-                      setLoading(true);
-                      try {
-                        await loginWithGoogle();
-                      } catch (err: any) {
-                        console.error('Google Sign-In error:', err);
-                        setError(err.message || 'Google Sign-In could not be completed.');
-                      } finally {
-                        setLoading(false);
-                      }
-                    }}
-                    disabled={loading}
-                    className="w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-100 font-semibold text-xs sm:text-sm transition flex items-center justify-center gap-2"
-                  >
-                    <ShieldCheck size={16} className="text-indigo-400" />
-                    <span>Continue with Official Google Account</span>
-                  </button>
-
-                  <div className="p-3.5 rounded-2xl bg-amber-950/30 border border-amber-800/40 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
-                        <Sparkles size={14} className="text-amber-400" />
-                        Administrator Setup
-                      </span>
-                      <span className="text-[10px] bg-amber-900/60 text-amber-200 px-2 py-0.5 rounded-md font-semibold">
-                        No Hardcoded Secrets
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-400 leading-relaxed">
-                      Initializing the portal for the first time? Provision the primary administrator account with your own secure password.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsFirstAdminSetup(true);
-                        setError(null);
-                        setSuccessMessage(null);
-                      }}
-                      className="w-full py-2 px-3 rounded-xl bg-amber-600/90 hover:bg-amber-500 text-white font-bold text-xs shadow transition flex items-center justify-center gap-1.5"
-                    >
-                      <Sparkles size={14} />
-                      <span>Initialize First Administrator Account</span>
-                    </button>
-                  </div>
-                </div>
               </form>
             )}
 
@@ -408,7 +356,7 @@ export const LoginView: React.FC = () => {
                       required
                       value={adminName}
                       onChange={(e) => setAdminName(e.target.value)}
-                      placeholder="e.g. Principal Aarif Ahmad Khan"
+                      placeholder="Enter Administrator Full Name"
                       className="w-full pl-9 pr-3 py-2 bg-slate-950/70 border border-slate-700/80 rounded-xl text-white text-xs sm:text-sm placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
                     />
                   </div>

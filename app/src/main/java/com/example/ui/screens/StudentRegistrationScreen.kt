@@ -212,7 +212,7 @@ fun StudentRegistrationScreen(
                     value = name,
                     onValueChange = { name = it },
                     label = { Text("Student Full Name *") },
-                    placeholder = { Text("e.g. Sahil Ahmad Wani") },
+                    placeholder = { Text("Enter student full name") },
                     leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -226,7 +226,7 @@ fun StudentRegistrationScreen(
                     value = parentage,
                     onValueChange = { parentage = it },
                     label = { Text("Parentage (Father / Mother Name) *") },
-                    placeholder = { Text("e.g. Mohammad Shafi Wani") },
+                    placeholder = { Text("Enter father's / mother's name") },
                     leadingIcon = { Icon(Icons.Default.FamilyRestroom, contentDescription = null) },
                     modifier = Modifier
                         .fillMaxWidth()

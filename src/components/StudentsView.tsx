@@ -514,7 +514,7 @@ export const StudentsView: React.FC = () => {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     className="w-full px-3 py-2 text-xs sm:text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
-                    placeholder="e.g. Aaqib Hussain"
+                    placeholder="Enter student full name"
                   />
                 </div>
                 <div>
@@ -527,7 +527,7 @@ export const StudentsView: React.FC = () => {
                     value={formData.parentage}
                     onChange={(e) => setFormData({ ...formData, parentage: e.target.value })}
                     className="w-full px-3 py-2 text-xs sm:text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
-                    placeholder="e.g. Ghulam Nabi"
+                    placeholder="Enter father's / guardian's name"
                   />
                 </div>
               </div>
@@ -557,7 +557,7 @@ export const StudentsView: React.FC = () => {
                     value={formData.rollNumber}
                     onChange={(e) => setFormData({ ...formData, rollNumber: e.target.value })}
                     className="w-full px-3 py-2 text-xs sm:text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
-                    placeholder="e.g. 7"
+                    placeholder="Enter roll number"
                   />
                 </div>
                 <div>
@@ -597,7 +597,7 @@ export const StudentsView: React.FC = () => {
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     className="w-full px-3 py-2 text-xs sm:text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
-                    placeholder="94190XXXXX"
+                    placeholder="Enter contact phone number"
                   />
                 </div>
               </div>

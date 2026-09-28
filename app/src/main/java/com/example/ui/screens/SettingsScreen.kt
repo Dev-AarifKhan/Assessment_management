@@ -353,7 +353,7 @@ fun SettingsScreen(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(text = InitialData.SCHOOL_NAME, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                    Text(text = "UDISE / Code: 01041103201 (GHSS-LRN)", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(text = "UDISE / Code: 01061601505 (GHSS-LRN)", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(text = "Zone: Larnoo, District: Anantnag, J&K", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(text = "Affiliation: JKBOSE State Board", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }

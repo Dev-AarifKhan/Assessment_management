@@ -10,11 +10,7 @@ import java.util.Locale
 
 object CsvStudentParser {
 
-    const val SAMPLE_CSV_TEMPLATE = """StudentId,Name,Parentage,Class,RollNumber,Stream,Phone,Session
-STU101,Mohammad Umar Lone,Abdul Rashid Lone,10th,15,General,9419011223,2025-2026
-STU102,Zainab Fatima,Showkat Ahmad Rather,10th,16,General,9419099887,2025-2026
-STU103,Danish Nazir Bhat,Nazir Ahmad Bhat,12th,04,Medical,9797055443,2025-2026
-STU104,Iqra Bashir,Bashir Ahmad Wani,11th,09,Non-Medical,9622088776,2025-2026"""
+    const val SAMPLE_CSV_TEMPLATE = "StudentId,Name,Parentage,Class,RollNumber,Stream,Phone,Session"
 
     data class ParseResult(
         val validStudents: List<StudentEntity>,

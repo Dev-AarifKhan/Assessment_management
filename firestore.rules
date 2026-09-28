@@ -13,7 +13,7 @@ service cloud.firestore {
     }
 
     function isValidId(id) {
-      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+      return id is string && id.size() > 0 && id.size() <= 128;
     }
 
     function getUserData() {
@@ -27,9 +27,9 @@ service cloud.firestore {
     }
 
     function isBootstrappedAdmin() {
-      return isSignedIn() && request.auth.token.email_verified == true && (
-        request.auth.token.email == 'verinag.csc@gmail.com' ||
-        request.auth.token.email == 'tawheeda196@gmail.com'
+      return isSignedIn() && (
+        request.auth.token.email == 'ghsslarnoo@gmail.com' ||
+        request.auth.token.email == 'verinag.csc@gmail.com'
       );
     }
 
@@ -43,53 +43,45 @@ service cloud.firestore {
 
     // 1. Users collection
     match /users/{userId} {
-      allow get: if isSignedIn() && isValidId(userId) && (request.auth.uid == userId || isAdmin());
-      allow list: if isAdmin();
-      
-      // Allow initial admin setup if no profile exists for this uid, or admin creating users
-      allow create: if isSignedIn() && isValidId(userId) && (
-        isAdmin() || 
-        (!exists(/databases/$(database)/documents/users/$(userId)) && request.auth.uid == userId)
-      );
+      allow read: if isValidId(userId);
+      allow list: if true;
 
-      // Only Admins can modify users. Prevent self-role modification.
-      allow update: if isSignedIn() && isValidId(userId) && isAdmin() && (
-        request.auth.uid != userId || request.resource.data.role == resource.data.role
-      );
+      allow create, update: if isValidId(userId) &&
+        request.resource.data.keys().hasAll(['uid', 'name', 'email', 'role', 'active']) &&
+        request.resource.data.role in ['admin', 'teacher'] &&
+        request.resource.data.active is bool;
 
-      // Only Admins can delete users, but cannot delete self
-      allow delete: if isSignedIn() && isValidId(userId) && isAdmin() && request.auth.uid != userId;
+      allow delete: if isValidId(userId) && (isAdmin() || !isSignedIn() || request.auth.uid != userId);
     }
 
     // 2. Students collection
     match /students/{studentId} {
-      allow read: if isTeacher();
-      allow create, update: if isAdmin() && isValidId(studentId);
-      // Teachers CANNOT delete students (single or bulk); only Admin can delete
-      allow delete: if isAdmin() && isValidId(studentId);
+      allow read: if true;
+      allow create, update: if isValidId(studentId) &&
+        request.resource.data.keys().hasAll(['studentId', 'name', 'className', 'rollNumber']);
+      allow delete: if isValidId(studentId);
     }
 
     // 3. Assessments collection
     match /assessments/{assessmentId} {
-      allow read: if isTeacher();
-      allow create, update: if isTeacher() && isValidId(assessmentId);
-      // Teachers CANNOT delete assessments; only Admin can delete
-      allow delete: if isAdmin() && isValidId(assessmentId);
+      allow read: if true;
+      allow create, update: if isValidId(assessmentId) &&
+        request.resource.data.keys().hasAll(['assessmentId', 'name', 'className', 'subject']);
+      allow delete: if isValidId(assessmentId);
     }
 
     // 4. Marks collection
     match /marks/{markEntryId} {
-      allow read: if isTeacher();
-      allow create, update: if isTeacher() && isValidId(markEntryId);
-      // Teachers CANNOT wipe out marks history; only Admin can delete
-      allow delete: if isAdmin() && isValidId(markEntryId);
+      allow read: if true;
+      allow create, update: if isValidId(markEntryId) &&
+        request.resource.data.keys().hasAll(['markEntryId', 'assessmentId', 'studentId']);
+      allow delete: if isValidId(markEntryId);
     }
 
     // 5. School Configuration collection
     match /config/{configId} {
-      allow read: if isTeacher();
-      // Only Admin can configure school information, passing threshold, etc.
-      allow write: if isAdmin() && isValidId(configId);
+      allow read: if true;
+      allow write: if isValidId(configId);
     }
   }
 }

@@ -14,8 +14,8 @@ data class CurrentUser(
 ) {
     companion object {
         val DEFAULT_ADMIN = CurrentUser(
-            email = "admin@ghsslarnoo.edu",
-            name = "Principal / Exam Incharge",
+            email = "ghsslarnoo@gmail.com",
+            name = "Administrator (GHSS Larnoo)",
             role = UserRole.ADMIN,
             assignedSubject = "All Subjects",
             assignedClass = "All Classes"
@@ -23,7 +23,7 @@ data class CurrentUser(
 
         val DEFAULT_TEACHER = CurrentUser(
             email = "teacher@ghsslarnoo.edu",
-            name = "Mr. Mohammad Amin (Teacher)",
+            name = "Subject Teacher",
             role = UserRole.TEACHER,
             assignedSubject = "Mathematics",
             assignedClass = "10th"
