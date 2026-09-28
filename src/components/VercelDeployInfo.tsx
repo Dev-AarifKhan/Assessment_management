@@ -63,6 +63,17 @@ export const VercelDeployInfo: React.FC<{ isOpen: boolean; onClose: () => void }
               <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60">
                 <div className="flex items-center gap-2 font-bold text-slate-900 dark:text-white">
                   <span className="w-5 h-5 rounded-full bg-indigo-600 text-white text-[11px] flex items-center justify-center">2</span>
+                  <span>Configure Environment Variables in Vercel (No Secrets in Git)</span>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 pl-7">
+                  To protect your repository from GitHub Secret Scanning alerts, <code className="font-mono bg-slate-200 dark:bg-slate-700 px-1 rounded">firebase-applet-config.json</code> and <code className="font-mono bg-slate-200 dark:bg-slate-700 px-1 rounded">.env</code> are git-ignored. In your Vercel project settings, add the <code className="font-mono bg-slate-200 dark:bg-slate-700 px-1 rounded">VITE_FIREBASE_*</code> variables listed in <code className="font-mono bg-slate-200 dark:bg-slate-700 px-1 rounded">.env.example</code>.
+                </p>
+              </div>
+
+              {/* Step 3 */}
+              <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60">
+                <div className="flex items-center gap-2 font-bold text-slate-900 dark:text-white">
+                  <span className="w-5 h-5 rounded-full bg-indigo-600 text-white text-[11px] flex items-center justify-center">3</span>
                   <span>Import Project in Vercel Dashboard</span>
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 pl-7">

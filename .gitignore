@@ -14,5 +14,25 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Environment & Secret Configuration Files (Never commit to GitHub)
 .env
+.env.*
+!.env.example
+firebase-applet-config.json
+firebase_applet_config.xml
+google-services.json
+**/google-services.json
+**/firebase_applet_config.xml
+
+# Keystores & Signing Credentials
+*.jks
+*.keystore
+*.keystore.base64
 debug.keystore
+
+# Web Build & Dependencies
+node_modules/
+dist/
+.vercel/
+

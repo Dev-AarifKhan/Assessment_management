@@ -26,12 +26,19 @@ service cloud.firestore {
         getUserData().active == true;
     }
 
+    function isBootstrappedAdmin() {
+      return isSignedIn() && request.auth.token.email_verified == true && (
+        request.auth.token.email == 'verinag.csc@gmail.com' ||
+        request.auth.token.email == 'tawheeda196@gmail.com'
+      );
+    }
+
     function isAdmin() {
-      return isActiveUser() && getUserData().role == 'admin';
+      return isBootstrappedAdmin() || (isActiveUser() && getUserData().role == 'admin');
     }
 
     function isTeacher() {
-      return isActiveUser() && (getUserData().role == 'teacher' || getUserData().role == 'admin');
+      return isBootstrappedAdmin() || (isActiveUser() && (getUserData().role == 'teacher' || getUserData().role == 'admin'));
     }
 
     // 1. Users collection

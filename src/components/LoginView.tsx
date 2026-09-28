@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 
 export const LoginView: React.FC = () => {
-  const { login, resetPassword, registerFirstAdmin, hasExistingUsers, checkHasUsers } = useAuth();
+  const { login, loginWithGoogle, resetPassword, registerFirstAdmin } = useAuth();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -267,87 +267,55 @@ export const LoginView: React.FC = () => {
                   )}
                 </button>
 
-                {/* First Administrator Credentials Reference & Quick Setup */}
-                <div className="mt-4 pt-3.5 border-t border-slate-800/80">
-                  <div className="p-3.5 rounded-2xl bg-amber-950/40 border border-amber-800/50 space-y-2.5">
+                {/* Institutional Sign-In & First-Time Admin Provisioning */}
+                <div className="mt-4 pt-3.5 border-t border-slate-800/80 space-y-2.5">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setError(null);
+                      setSuccessMessage(null);
+                      setLoading(true);
+                      try {
+                        await loginWithGoogle();
+                      } catch (err: any) {
+                        console.error('Google Sign-In error:', err);
+                        setError(err.message || 'Google Sign-In could not be completed.');
+                      } finally {
+                        setLoading(false);
+                      }
+                    }}
+                    disabled={loading}
+                    className="w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-100 font-semibold text-xs sm:text-sm transition flex items-center justify-center gap-2"
+                  >
+                    <ShieldCheck size={16} className="text-indigo-400" />
+                    <span>Continue with Official Google Account</span>
+                  </button>
+
+                  <div className="p-3.5 rounded-2xl bg-amber-950/30 border border-amber-800/40 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
                         <Sparkles size={14} className="text-amber-400" />
-                        First Administrator Credentials
+                        Administrator Setup
                       </span>
                       <span className="text-[10px] bg-amber-900/60 text-amber-200 px-2 py-0.5 rounded-md font-semibold">
-                        Initial Setup
+                        No Hardcoded Secrets
                       </span>
                     </div>
-
-                    <div className="space-y-1 text-xs text-slate-300 font-mono bg-slate-950/60 p-2.5 rounded-xl border border-amber-900/40">
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Email:</span>
-                        <span className="text-amber-300 font-semibold select-all">admin@ghsslarnoo.edu</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Password:</span>
-                        <span className="text-amber-300 font-semibold select-all">Admin@123456</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Role:</span>
-                        <span className="text-emerald-400 font-bold">Primary Administrator</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          setError(null);
-                          setSuccessMessage(null);
-                          setLoading(true);
-                          try {
-                            await registerFirstAdmin("Aarif Ahmad Khan (Principal)", "admin@ghsslarnoo.edu", "Admin@123456");
-                          } catch (err: any) {
-                            console.error(err);
-                            try {
-                              await login("admin@ghsslarnoo.edu", "Admin@123456");
-                            } catch (loginErr: any) {
-                              setError(loginErr.message || "Failed to auto-sign in as Admin");
-                            }
-                          } finally {
-                            setLoading(false);
-                          }
-                        }}
-                        disabled={loading}
-                        className="flex-1 py-2 px-3 rounded-xl bg-amber-600 hover:bg-amber-500 active:scale-[0.98] text-white font-bold text-xs shadow transition flex items-center justify-center gap-1.5"
-                      >
-                        {loading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-                        <span>Quick Sign In as First Admin</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEmail("admin@ghsslarnoo.edu");
-                          setPassword("Admin@123456");
-                        }}
-                        className="py-2 px-3 rounded-xl border border-slate-700 hover:bg-slate-800 text-slate-300 text-xs font-semibold transition"
-                        title="Auto-fill form with default credentials"
-                      >
-                        Auto-Fill
-                      </button>
-                    </div>
-
-                    <div className="text-[10px] text-slate-400 text-center flex items-center justify-center gap-1">
-                      <span>Or use custom email:</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEmail("tawheeda196@gmail.com");
-                          setPassword("Admin@123456");
-                        }}
-                        className="text-amber-400 hover:underline"
-                      >
-                        tawheeda196@gmail.com
-                      </button>
-                    </div>
+                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                      Initializing the portal for the first time? Provision the primary administrator account with your own secure password.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsFirstAdminSetup(true);
+                        setError(null);
+                        setSuccessMessage(null);
+                      }}
+                      className="w-full py-2 px-3 rounded-xl bg-amber-600/90 hover:bg-amber-500 text-white font-bold text-xs shadow transition flex items-center justify-center gap-1.5"
+                    >
+                      <Sparkles size={14} />
+                      <span>Initialize First Administrator Account</span>
+                    </button>
                   </div>
                 </div>
               </form>

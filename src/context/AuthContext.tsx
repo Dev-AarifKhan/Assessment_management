@@ -22,8 +22,7 @@ import {
 } from 'firebase/firestore';
 import { initializeApp, deleteApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { auth, db } from '../firebase';
-import firebaseConfig from '../../firebase-applet-config.json';
+import { auth, db, firebaseConfig } from '../firebase';
 import { UserProfile, UserRole } from '../types';
 
 interface AuthContextType {
@@ -114,8 +113,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               user: { uid: firebaseUser.uid, email: firebaseUser.email, displayName: firebaseUser.displayName }
             }));
           } else {
-            // First time login with Google or new user: assign admin if first user or tawheeda196
-            const isOwner = firebaseUser.email === 'tawheeda196@gmail.com';
+            // First time login with Google or new user: assign admin if first user or bootstrapped admin
+            const isOwner = firebaseUser.email === 'tawheeda196@gmail.com' || firebaseUser.email === 'verinag.csc@gmail.com';
             const usersSnap = await getDocs(query(collection(db, 'users'), limit(1)));
             const role: UserRole = usersSnap.empty || isOwner ? 'admin' : 'teacher';
 
@@ -178,7 +177,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user: { uid: firebaseUser.uid, email: firebaseUser.email, displayName: firebaseUser.displayName }
       }));
     } else {
-      const isOwner = firebaseUser.email === 'tawheeda196@gmail.com';
+      const isOwner = firebaseUser.email === 'tawheeda196@gmail.com' || firebaseUser.email === 'verinag.csc@gmail.com';
       const usersSnap = await getDocs(query(collection(db, 'users'), limit(1)));
       const role: UserRole = usersSnap.empty || isOwner ? 'admin' : 'teacher';
 
@@ -249,7 +248,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (
           email.toLowerCase().includes('admin') || 
           email.toLowerCase() === 'tawheeda196@gmail.com' ||
-          password === 'Admin@123456'
+          email.toLowerCase() === 'verinag.csc@gmail.com'
         ) {
           const adminProfile: UserProfile = {
             uid: 'admin-primary-ghss',

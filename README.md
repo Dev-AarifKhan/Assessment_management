@@ -25,6 +25,7 @@ vercel deploy --prod
 - `vercel.json`: Handles routing and single-page application rewrites to `index.html`.
 - `package.json`: Contains production `build`, `dev`, and `preview` scripts with React 18, Vite, and Lucide icons.
 - `.vercelignore`: Excludes Gradle and Android build artifacts from Vercel deployments.
+- `.gitignore` & `.env.example`: Excludes `firebase-applet-config.json`, `google-services.json`, keystores, and `.env` files from Git so API keys and secrets are never committed to GitHub. Configure `VITE_FIREBASE_*` environment variables (listed in `.env.example`) in your deployment environment.
 
 ---
 
