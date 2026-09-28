@@ -252,7 +252,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               uid: firebaseUser.uid,
               name:
                 firebaseUser.displayName ||
-                (role === 'admin' ? 'Administrator (GHSS Larnoo)' : 'Authorized Staff'),
+                (role === 'admin' ? 'Aarif Ahmad Khan (Administrator)' : 'Authorized Staff'),
               email: fbEmail,
               role,
               active: true,
@@ -342,7 +342,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         uid: firebaseUser.uid,
         name:
           firebaseUser.displayName ||
-          (role === 'admin' ? 'Administrator (GHSS Larnoo)' : 'School Staff'),
+          (role === 'admin' ? 'Aarif Ahmad Khan (Administrator)' : 'School Staff'),
         email: (firebaseUser.email || '').toLowerCase(),
         role,
         active: true,
@@ -394,7 +394,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const adminProfile: UserProfile = {
           uid: cred.user.uid,
-          name: 'Administrator (GHSS Larnoo)',
+          name: 'Aarif Ahmad Khan (Administrator)',
           email: OFFICIAL_ADMIN_EMAIL,
           role: 'admin',
           active: true,
@@ -424,7 +424,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const adminUid = 'admin-ghss-larnoo';
         const adminProfile: UserProfile = {
           uid: adminUid,
-          name: 'Administrator (GHSS Larnoo)',
+          name: 'Aarif Ahmad Khan (Administrator)',
           email: OFFICIAL_ADMIN_EMAIL,
           role: 'admin',
           active: true,
@@ -590,7 +590,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const registerFirstAdmin = async (name: string, email: string, password: string) => {
     const cleanEmail = email.trim().toLowerCase();
-    const cleanName = name.trim() || 'Administrator (GHSS Larnoo)';
+    const cleanName = name.trim() || 'Aarif Ahmad Khan (Administrator)';
     try {
       let cred;
       try {
