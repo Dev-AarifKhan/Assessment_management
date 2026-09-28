@@ -52,7 +52,7 @@ export const SettingsView: React.FC<{ onOpenVercelModal: () => void }> = ({ onOp
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                School Registration Code
+                UDISE / School Code
               </label>
               <input
                 type="text"
@@ -95,7 +95,7 @@ export const SettingsView: React.FC<{ onOpenVercelModal: () => void }> = ({ onOp
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Board Affiliation Text
+                Email & UDISE Information
               </label>
               <input
                 type="text"

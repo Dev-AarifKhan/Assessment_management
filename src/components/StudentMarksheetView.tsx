@@ -140,7 +140,7 @@ export const StudentMarksheetView: React.FC = () => {
                   {config.schoolAddress}
                 </p>
                 <p className="text-[11px] text-slate-600 italic">
-                  {config.affiliation} • School Code: <strong>{config.schoolCode}</strong>
+                  Email: ghsslarnoo@gmail.com UDISE Code: 01061601505
                 </p>
 
                 <div className="mt-3 inline-block px-5 py-1 border-2 border-slate-900 bg-slate-100 rounded-md">

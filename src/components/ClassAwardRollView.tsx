@@ -159,7 +159,7 @@ export const ClassAwardRollView: React.FC = () => {
                   {config.schoolAddress}
                 </p>
                 <p className="text-[11px] font-medium text-slate-600 italic">
-                  {config.affiliation} • School Code: <strong>{config.schoolCode}</strong>
+                  Email: ghsslarnoo@gmail.com UDISE Code: 01061601505
                 </p>
                 
                 <div className="mt-2 inline-block px-4 py-1 bg-slate-100 border border-slate-800 rounded-md">

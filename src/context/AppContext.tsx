@@ -37,7 +37,20 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [config, setConfig] = useState<SchoolConfig>(() => {
     const saved = localStorage.getItem('ghss_config');
-    return saved ? JSON.parse(saved) : initialConfig;
+    let cfg: SchoolConfig = saved ? JSON.parse(saved) : initialConfig;
+    if (
+      !saved ||
+      cfg.schoolCode === 'GHSS-LRN' ||
+      cfg.affiliation?.includes('Affiliated to Jammu and Kashmir Board')
+    ) {
+      cfg = {
+        ...cfg,
+        schoolCode: '01061601505',
+        affiliation: 'Email: ghsslarnoo@gmail.com UDISE Code: 01061601505'
+      };
+      localStorage.setItem('ghss_config', JSON.stringify(cfg));
+    }
+    return cfg;
   });
 
   const [students, setStudents] = useState<Student[]>(() => {

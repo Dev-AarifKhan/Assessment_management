@@ -31,8 +31,7 @@ const MainContent: React.FC = () => {
       </main>
 
       <footer className="no-print mt-12 py-6 border-t border-slate-200 dark:border-slate-800 text-center text-xs text-slate-500 dark:text-slate-400">
-        <p>Government Higher Secondary School Larnoo • Result & Examination Wing</p>
-        <p className="mt-1">Affiliated to JKBOSE • Vercel Deployment & Android Hybrid Applet</p>
+        <p>© 2026 Govt. Higher Secondary School Larnoo | Student Assessment & Result Management System | All Rights Reserved</p>
       </footer>
 
       <VercelDeployInfo isOpen={vercelModalOpen} onClose={() => setVercelModalOpen(false)} />

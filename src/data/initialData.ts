@@ -2,9 +2,9 @@ import { Student, Assessment, MarkEntry, SchoolConfig } from '../types';
 
 export const initialConfig: SchoolConfig = {
   schoolName: "Government Higher Secondary School Larnoo",
-  schoolCode: "GHSS-LRN",
+  schoolCode: "01061601505",
   schoolAddress: "Larnoo, Anantnag, Jammu & Kashmir - 192202",
-  affiliation: "Affiliated to Jammu and Kashmir Board of School Education (JKBOSE)",
+  affiliation: "Email: ghsslarnoo@gmail.com UDISE Code: 01061601505",
   passingPercentage: 35.0,
   activeSession: "2025-2026",
 };
