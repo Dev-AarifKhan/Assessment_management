@@ -1,5 +1,6 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
+import { normalizeClassName } from '../utils/classUtils';
 import { 
   Users, 
   BookOpen, 
@@ -29,10 +30,10 @@ export const DashboardView: React.FC = () => {
     : 85;
 
   const classCounts = {
-    '9th': students.filter(s => s.className === '9th').length,
-    '10th': students.filter(s => s.className === '10th').length,
-    '11th': students.filter(s => s.className === '11th').length,
-    '12th': students.filter(s => s.className === '12th').length,
+    '9th': students.filter(s => normalizeClassName(s.className) === '9th').length,
+    '10th': students.filter(s => normalizeClassName(s.className) === '10th').length,
+    '11th': students.filter(s => normalizeClassName(s.className) === '11th').length,
+    '12th': students.filter(s => normalizeClassName(s.className) === '12th').length,
   };
 
   return (

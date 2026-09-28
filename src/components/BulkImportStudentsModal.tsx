@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { useApp } from '../context/AppContext';
 import { Student } from '../types';
+import { normalizeClassName } from '../utils/classUtils';
 import { 
   Upload, FileSpreadsheet, Download, CheckCircle, AlertTriangle, 
   X, FileText, RefreshCw, AlertCircle, ArrowRight
@@ -128,21 +129,22 @@ export const BulkImportStudentsModal: React.FC<BulkImportStudentsModalProps> = (
       const existingIds = new Set(students.map(s => s.studentId.trim().toLowerCase()));
 
       const parsed: ParsedStudentRow[] = rawJson.map((row: any, idx: number) => {
-        const studentId = getField(row, ['studentid', 'student id', 'id', 'admissionno', 'regno', 'stuid']);
-        const name = getField(row, ['name', 'studentname', 'student name', 'fullname', 'candidate name']);
-        const parentage = getField(row, ['parentage', 'fathername', 'father name', 'fathers name', 'guardian', 'father']);
-        let className = getField(row, ['class', 'classname', 'class name', 'grade']);
-        const rollNumber = getField(row, ['rollnumber', 'roll number', 'rollno', 'roll no', 'roll']);
-        let stream = getField(row, ['stream', 'discipline', 'subject stream']);
-        const phone = getField(row, ['phone', 'mobile', 'contact', 'cell', 'phonenumber']);
+        let studentId = getField(row, ['studentid', 'student id', 'id', 'admissionno', 'admission no', 'regno', 'reg no', 'registrationno', 'stuid', 'enrollmentno']);
+        const name = getField(row, ['name', 'studentname', 'student name', 'fullname', 'candidate name', 'candidatename']);
+        const parentage = getField(row, ['parentage', 'fathername', 'father name', 'fathers name', 'guardian', 'father', 'parent', 'parents name']);
+        const rawClass = getField(row, ['class', 'classname', 'class name', 'grade', 'standard', 'std', 'enrolledclass', 'enrolled class', 'classgrade']);
+        const className = normalizeClassName(rawClass || '10th');
+        const rollNumber = getField(row, ['rollnumber', 'roll number', 'rollno', 'roll no', 'roll', 'rno', 'srno', 'sno']);
+        let stream = getField(row, ['stream', 'discipline', 'subject stream', 'group', 'branch']);
+        const phone = getField(row, ['phone', 'mobile', 'contact', 'cell', 'phonenumber', 'contactno']);
         let gender = getField(row, ['gender', 'sex']);
-        const session = getField(row, ['session', 'academicsession', 'academic session', 'year']) || config.activeSession || '2025-2026';
+        const session = getField(row, ['session', 'academicsession', 'academic session', 'year', 'batch']) || config.activeSession || '2025-2026';
 
-        // Format class e.g. "10" -> "10th"
-        if (/^\d+$/.test(className)) {
-          className = `${className}th`;
-        } else if (!className) {
-          className = '10th';
+        // Auto-generate studentId if not provided in sheet
+        if (!studentId && (name || rollNumber)) {
+          const classDigits = className.replace(/\D/g, '') || '10';
+          const rollSafe = (rollNumber || (idx + 1)).toString().padStart(2, '0');
+          studentId = `STU-${classDigits}-${rollSafe}`;
         }
 
         // Format gender

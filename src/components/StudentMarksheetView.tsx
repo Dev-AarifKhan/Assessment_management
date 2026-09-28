@@ -198,6 +198,8 @@ export const StudentMarksheetView: React.FC = () => {
                   </tr>
                 ) : (
                   studentMarks.map((m, idx) => {
+                    const assessmentObj = assessments.find(a => a.assessmentId === m.assessmentId);
+                    const examTitle = assessmentObj ? `${assessmentObj.name} (${assessmentObj.type})` : m.assessmentId;
                     const passMark = (m.maxMarks * config.passingPercentage) / 100;
                     const isPresent = m.status === 'Present';
                     const isPass = isPresent && m.obtainedMarks !== null && m.obtainedMarks >= passMark;
@@ -206,7 +208,7 @@ export const StudentMarksheetView: React.FC = () => {
                       <tr key={m.markEntryId} className="border-b border-slate-300 text-center hover:bg-slate-50">
                         <td className="py-2 px-3 border-r border-slate-300">{idx + 1}</td>
                         <td className="py-2 px-4 border-r border-slate-300 text-left font-bold text-slate-900">{m.subject}</td>
-                        <td className="py-2 px-4 border-r border-slate-300 text-left text-slate-700">{m.assessmentId}</td>
+                        <td className="py-2 px-4 border-r border-slate-300 text-left text-slate-700">{examTitle}</td>
                         <td className="py-2 px-3 border-r border-slate-300">{m.maxMarks}</td>
                         <td className="py-2 px-3 border-r border-slate-300 font-black text-slate-900 text-sm">
                           {!isPresent ? 'ABS' : m.obtainedMarks !== null ? m.obtainedMarks : '-'}

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Student, Assessment, MarkEntry, SchoolConfig, UserRole, ActiveTab } from '../types';
 import { initialConfig, initialStudents, initialAssessments, initialMarks } from '../data/initialData';
+import { normalizeClassName } from '../utils/classUtils';
 
 interface AppContextType {
   config: SchoolConfig;
@@ -14,6 +15,7 @@ interface AppContextType {
   assessments: Assessment[];
   addAssessment: (assessment: Assessment) => void;
   updateAssessment: (assessment: Assessment) => void;
+  deleteAssessment: (assessmentId: string) => void;
   markEntries: MarkEntry[];
   saveMarkEntry: (entry: MarkEntry) => void;
   saveMultipleMarkEntries: (entries: MarkEntry[]) => void;
@@ -40,17 +42,51 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [students, setStudents] = useState<Student[]>(() => {
     const saved = localStorage.getItem('ghss_students');
-    return saved ? JSON.parse(saved) : initialStudents;
+    const raw: Student[] = saved ? JSON.parse(saved) : initialStudents;
+    return raw.map(s => ({
+      ...s,
+      className: normalizeClassName(s.className)
+    }));
   });
 
   const [assessments, setAssessments] = useState<Assessment[]>(() => {
     const saved = localStorage.getItem('ghss_assessments');
-    return saved ? JSON.parse(saved) : initialAssessments;
+    if (!saved) return [];
+    try {
+      const parsed: Assessment[] = JSON.parse(saved);
+      const dummyIds = new Set([
+        'ASM-25-10-MATH-UT1',
+        'ASM-25-10-ENG-MT',
+        'ASM-25-10-SCI-UT1',
+        'ASM-25-12-PHY-UT1',
+        'ASM-24-10-MATH-ANNUAL'
+      ]);
+      return parsed
+        .filter(a => !dummyIds.has(a.assessmentId))
+        .map(a => ({ ...a, className: normalizeClassName(a.className) }));
+    } catch {
+      return [];
+    }
   });
 
   const [markEntries, setMarkEntries] = useState<MarkEntry[]>(() => {
     const saved = localStorage.getItem('ghss_marks');
-    return saved ? JSON.parse(saved) : initialMarks;
+    if (!saved) return [];
+    try {
+      const parsed: MarkEntry[] = JSON.parse(saved);
+      const dummyIds = new Set([
+        'ASM-25-10-MATH-UT1',
+        'ASM-25-10-ENG-MT',
+        'ASM-25-10-SCI-UT1',
+        'ASM-25-12-PHY-UT1',
+        'ASM-24-10-MATH-ANNUAL'
+      ]);
+      return parsed
+        .filter(m => !dummyIds.has(m.assessmentId))
+        .map(m => ({ ...m, className: normalizeClassName(m.className) }));
+    } catch {
+      return [];
+    }
   });
 
   const [role, setRole] = useState<UserRole>(() => {
@@ -64,8 +100,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
-  const [selectedAssessmentId, setSelectedAssessmentId] = useState<string>('ASM-25-10-MATH-UT1');
+  const [selectedAssessmentId, setSelectedAssessmentId] = useState<string>('');
   const [selectedStudentId, setSelectedStudentId] = useState<string>('GHSS-25-1001');
+
+  // Keep selected assessment ID in sync
+  useEffect(() => {
+    if (assessments.length > 0) {
+      if (!selectedAssessmentId || !assessments.some(a => a.assessmentId === selectedAssessmentId)) {
+        setSelectedAssessmentId(assessments[0].assessmentId);
+      }
+    } else {
+      if (selectedAssessmentId !== '') {
+        setSelectedAssessmentId('');
+      }
+    }
+  }, [assessments, selectedAssessmentId]);
 
   useEffect(() => {
     localStorage.setItem('ghss_config', JSON.stringify(config));
@@ -101,23 +150,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const addStudent = (student: Student) => {
-    setStudents(prev => [student, ...prev]);
+    const normalized = { ...student, className: normalizeClassName(student.className) };
+    setStudents(prev => [normalized, ...prev]);
   };
 
   const bulkAddStudents = (newStudents: Student[]) => {
     setStudents(prev => {
       // Map existing by lowercase studentId
       const map = new Map<string, Student>();
-      // Keep existing
-      prev.forEach(s => map.set(s.studentId.trim().toLowerCase(), s));
-      // Overwrite or append new students
-      newStudents.forEach(s => map.set(s.studentId.trim().toLowerCase(), s));
+      // Keep existing with normalized className
+      prev.forEach(s => map.set(s.studentId.trim().toLowerCase(), { ...s, className: normalizeClassName(s.className) }));
+      // Overwrite or append new students with normalized className
+      newStudents.forEach(s => {
+        const norm = { ...s, className: normalizeClassName(s.className) };
+        map.set(norm.studentId.trim().toLowerCase(), norm);
+      });
       return Array.from(map.values());
     });
   };
 
   const updateStudent = (student: Student) => {
-    setStudents(prev => prev.map(s => s.studentId === student.studentId ? student : s));
+    const normalized = { ...student, className: normalizeClassName(student.className) };
+    setStudents(prev => prev.map(s => s.studentId === normalized.studentId ? normalized : s));
   };
 
   const deleteStudent = (studentId: string) => {
@@ -132,22 +186,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const addAssessment = (assessment: Assessment) => {
-    setAssessments(prev => [assessment, ...prev]);
+    const normalized = { ...assessment, className: normalizeClassName(assessment.className) };
+    setAssessments(prev => [normalized, ...prev]);
+    setSelectedAssessmentId(normalized.assessmentId);
   };
 
   const updateAssessment = (assessment: Assessment) => {
-    setAssessments(prev => prev.map(a => a.assessmentId === assessment.assessmentId ? assessment : a));
+    const normalized = { ...assessment, className: normalizeClassName(assessment.className) };
+    setAssessments(prev => prev.map(a => a.assessmentId === normalized.assessmentId ? normalized : a));
+  };
+
+  const deleteAssessment = (assessmentId: string) => {
+    setAssessments(prev => prev.filter(a => a.assessmentId !== assessmentId));
+    setMarkEntries(prev => prev.filter(m => m.assessmentId !== assessmentId));
+    if (selectedAssessmentId === assessmentId) {
+      setSelectedAssessmentId('');
+    }
   };
 
   const saveMarkEntry = (entry: MarkEntry) => {
+    const normalized = { ...entry, className: normalizeClassName(entry.className) };
     setMarkEntries(prev => {
-      const idx = prev.findIndex(m => m.markEntryId === entry.markEntryId || (m.assessmentId === entry.assessmentId && m.studentId === entry.studentId));
+      const idx = prev.findIndex(m => m.markEntryId === normalized.markEntryId || (m.assessmentId === normalized.assessmentId && m.studentId === normalized.studentId));
       if (idx >= 0) {
         const copy = [...prev];
-        copy[idx] = entry;
+        copy[idx] = normalized;
         return copy;
       }
-      return [...prev, entry];
+      return [...prev, normalized];
     });
   };
 
@@ -155,11 +221,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setMarkEntries(prev => {
       const copy = [...prev];
       entries.forEach(newEntry => {
-        const idx = copy.findIndex(m => m.markEntryId === newEntry.markEntryId || (m.assessmentId === newEntry.assessmentId && m.studentId === newEntry.studentId));
+        const normalized = { ...newEntry, className: normalizeClassName(newEntry.className) };
+        const idx = copy.findIndex(m => m.markEntryId === normalized.markEntryId || (m.assessmentId === normalized.assessmentId && m.studentId === normalized.studentId));
         if (idx >= 0) {
-          copy[idx] = newEntry;
+          copy[idx] = normalized;
         } else {
-          copy.push(newEntry);
+          copy.push(normalized);
         }
       });
       return copy;
@@ -168,11 +235,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const resetToDefaults = () => {
     setConfig(initialConfig);
-    setStudents(initialStudents);
-    setAssessments(initialAssessments);
-    setMarkEntries(initialMarks);
+    setStudents(initialStudents.map(s => ({ ...s, className: normalizeClassName(s.className) })));
+    setAssessments([]);
+    setMarkEntries([]);
     setRole('admin');
-    setSelectedAssessmentId('ASM-25-10-MATH-UT1');
+    setSelectedAssessmentId('');
     setSelectedStudentId('GHSS-25-1001');
     localStorage.clear();
   };
@@ -191,6 +258,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         assessments,
         addAssessment,
         updateAssessment,
+        deleteAssessment,
         markEntries,
         saveMarkEntry,
         saveMultipleMarkEntries,

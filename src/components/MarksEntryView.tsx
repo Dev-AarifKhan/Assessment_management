@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { MarkEntry } from '../types';
-import { Save, Award, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
+import { Save, Award, CheckCircle, AlertCircle, RefreshCw, BookOpen, PlusCircle } from 'lucide-react';
+import { normalizeClassName } from '../utils/classUtils';
 
 export const MarksEntryView: React.FC = () => {
   const { 
@@ -17,9 +18,16 @@ export const MarksEntryView: React.FC = () => {
 
   const activeAssessment = assessments.find(a => a.assessmentId === selectedAssessmentId) || assessments[0];
 
-  // Candidates in this class
+  // Candidates in this class normalized and sorted by roll number
   const classStudents = activeAssessment 
-    ? students.filter(s => s.className === activeAssessment.className)
+    ? students
+        .filter(s => normalizeClassName(s.className) === normalizeClassName(activeAssessment.className))
+        .sort((a, b) => {
+          const numA = parseInt(a.rollNumber, 10);
+          const numB = parseInt(b.rollNumber, 10);
+          if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+          return a.rollNumber.localeCompare(b.rollNumber);
+        })
     : [];
 
   // Local draft rows for interactive editing
@@ -54,10 +62,25 @@ export const MarksEntryView: React.FC = () => {
     setDraftMarks(initialDraft);
   }, [activeAssessment?.assessmentId, students]);
 
-  if (!activeAssessment) {
+  if (!activeAssessment || assessments.length === 0) {
     return (
-      <div className="p-8 text-center text-slate-500">
-        No active assessments found. Please create an assessment first.
+      <div className="p-12 text-center rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm max-w-xl mx-auto my-8">
+        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+          <BookOpen size={32} />
+        </div>
+        <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+          No Assessments Available
+        </h3>
+        <p className="mt-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+          All sample assessments have been cleared. As an Admin or Teacher, create an assessment first in the Assessments tab to record marks for your candidates.
+        </p>
+        <button
+          onClick={() => setActiveTab('assessments')}
+          className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs sm:text-sm shadow-md transition"
+        >
+          <PlusCircle size={16} />
+          <span>Create an Assessment</span>
+        </button>
       </div>
     );
   }

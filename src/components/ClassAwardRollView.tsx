@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { useApp } from '../context/AppContext';
-import { Award, Printer, Download, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { Award, Printer, Download, ArrowLeft, CheckCircle2, BookOpen } from 'lucide-react';
+import { normalizeClassName } from '../utils/classUtils';
 
 export const ClassAwardRollView: React.FC = () => {
   const { 
@@ -17,17 +18,39 @@ export const ClassAwardRollView: React.FC = () => {
 
   const activeAssessment = assessments.find(a => a.assessmentId === selectedAssessmentId) || assessments[0];
   const classStudents = activeAssessment 
-    ? students.filter(s => s.className === activeAssessment.className).sort((a, b) => Number(a.rollNumber) - Number(b.rollNumber))
+    ? students
+        .filter(s => normalizeClassName(s.className) === normalizeClassName(activeAssessment.className))
+        .sort((a, b) => {
+          const numA = parseInt(a.rollNumber, 10);
+          const numB = parseInt(b.rollNumber, 10);
+          if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+          return a.rollNumber.localeCompare(b.rollNumber);
+        })
     : [];
 
   const handlePrint = () => {
     window.print();
   };
 
-  if (!activeAssessment) {
+  if (!activeAssessment || assessments.length === 0) {
     return (
-      <div className="p-8 text-center text-slate-500">
-        No active assessment selected.
+      <div className="p-12 text-center rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm max-w-xl mx-auto my-8">
+        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+          <Award size={32} />
+        </div>
+        <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+          No Award Roll Available
+        </h3>
+        <p className="mt-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+          Create an assessment and enter student marks first to generate official JKBOSE formatted award rolls.
+        </p>
+        <button
+          onClick={() => setActiveTab('assessments')}
+          className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs sm:text-sm shadow-md transition"
+        >
+          <BookOpen size={16} />
+          <span>Create an Assessment</span>
+        </button>
       </div>
     );
   }

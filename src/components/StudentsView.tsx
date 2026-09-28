@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Student } from '../types';
+import { normalizeClassName } from '../utils/classUtils';
 import { 
   Search, 
   UserPlus, 
@@ -41,8 +42,20 @@ export const StudentsView: React.FC = () => {
     admissionDate: new Date().toISOString().split('T')[0]
   });
 
+  // Dynamically compile all class options present in the school
+  const allClasses = Array.from(
+    new Set([
+      ...CLASSES_LIST,
+      ...students.map(s => normalizeClassName(s.className)).filter(Boolean)
+    ])
+  ).sort((a, b) => {
+    const numA = parseInt(a.replace(/\D/g, ''), 10) || 0;
+    const numB = parseInt(b.replace(/\D/g, ''), 10) || 0;
+    return numA - numB;
+  });
+
   const filteredStudents = students.filter(s => {
-    const matchesClass = selectedClass === 'All' || s.className === selectedClass;
+    const matchesClass = selectedClass === 'All' || normalizeClassName(s.className) === normalizeClassName(selectedClass);
     const q = searchQuery.toLowerCase();
     const matchesSearch = s.name.toLowerCase().includes(q) ||
       s.rollNumber.toLowerCase().includes(q) ||
@@ -269,8 +282,8 @@ export const StudentsView: React.FC = () => {
           >
             All Classes ({students.length})
           </button>
-          {CLASSES_LIST.map((cls) => {
-            const count = students.filter(s => s.className === cls).length;
+          {allClasses.map((cls) => {
+            const count = students.filter(s => normalizeClassName(s.className) === normalizeClassName(cls)).length;
             return (
               <button
                 key={cls}

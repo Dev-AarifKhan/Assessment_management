@@ -2,12 +2,24 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { CreditCard, Printer, User } from 'lucide-react';
 import { CLASSES_LIST } from '../data/initialData';
+import { normalizeClassName } from '../utils/classUtils';
 
 export const IdCardView: React.FC = () => {
   const { students, config } = useApp();
   const [selectedClass, setSelectedClass] = useState<string>('10th');
 
-  const classStudents = students.filter(s => s.className === selectedClass);
+  const allClasses = Array.from(
+    new Set([
+      ...CLASSES_LIST,
+      ...students.map(s => normalizeClassName(s.className)).filter(Boolean)
+    ])
+  ).sort((a, b) => {
+    const numA = parseInt(a.replace(/\D/g, ''), 10) || 0;
+    const numB = parseInt(b.replace(/\D/g, ''), 10) || 0;
+    return numA - numB;
+  });
+
+  const classStudents = students.filter(s => normalizeClassName(s.className) === normalizeClassName(selectedClass));
 
   return (
     <div className="space-y-6">
@@ -28,7 +40,7 @@ export const IdCardView: React.FC = () => {
             onChange={(e) => setSelectedClass(e.target.value)}
             className="px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs sm:text-sm font-semibold"
           >
-            {CLASSES_LIST.map(c => (
+            {allClasses.map(c => (
               <option key={c} value={c}>Class {c}</option>
             ))}
           </select>
